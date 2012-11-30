@@ -1,0 +1,30 @@
+.tracker {
+    position: relative;
+    height: 1px;
+    background: #cdcdcd;
+    }
+    .tracker * {
+        margin: 0;
+        padding: 0;
+        }
+    .tracker__path {
+        position: absolute;
+        background: #000;
+        height: 1px;
+        }
+    .tracker__left,
+    .tracker__right {
+        cursor: e-resize;
+        width: 6px;
+        height: 6px;
+        background-repeat: no-repeat;
+        background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA0AAAAGCAYAAAAYLBS/AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAEpJREFUeNp8jgEKACAIA7f/P3oVarioBgo69SQA4SJJnDJv1quPSLFo0fu5rA1Y5m3gcSyIaRZen/fYf7co2kEyGakTG4mnPwQYABGaS9guVc4cAAAAAElFTkSuQmCC);
+        }
+    .tracker__left {
+        position: absolute;
+        background-position: left top;
+        }
+    .tracker__right {
+        position: absolute;
+        background-position: right top;
+        }

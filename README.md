@@ -1,4 +1,9 @@
-tracker
+﻿islider
 =======
 
-tracker
+islider
+
+Demo
+----
+
+http://sati.16mb.com/islider/
