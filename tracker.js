@@ -1,6 +1,6 @@
 (function( $, root ) {
 
-function Tracker( el, props ) {
+function iSlider( el, props ) {
     var a, f, defs, event = $( {} );
 
     defs = {
@@ -258,14 +258,14 @@ function Slider( el, ctx, domain, range ) {
     }
 };
 
-$.fn.tracker = function( props ) {
+$.fn.islider = function( props ) {
     var item, instance;
     $( this ).each( function() {
         item = $( this );
         if ( item.data( "tracker") ) {
             console.log( "tracker already init", this );
         } else {
-            instance = Tracker( $( this ), props ? props : {} );
+            instance = iSlider( $( this ), props ? props : {} );
             item.data( "tracker", instance );
         }
     });
