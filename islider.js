@@ -4,11 +4,11 @@ function iSlider( el, props ) {
     var a, f, defs, event = $( {} );
 
     defs = {
-        tracker:  "tracker",
-        empty:    "tracker__empty",
-        left:     "tracker__left",
-        right:    "tracker__right",
-        path:     "tracker__path",
+        islider:  "islider",
+        empty:    "islider__empty",
+        left:     "islider__left",
+        right:    "islider__right",
+        path:     "islider__path",
         generate: true,
         domain:   [ 0, 1 ],
         min: 0,
@@ -35,7 +35,7 @@ function iSlider( el, props ) {
         },
 
         cache: function() {
-            el.addClass( defs.tracker );
+            el.addClass( defs.islider );
 
             a = {
                 leftEl:  el.find( defs.left ),
@@ -45,7 +45,7 @@ function iSlider( el, props ) {
         },
 
         generate: function() {
-            el.addClass( defs.tracker );
+            el.addClass( defs.islider );
 
             a = {
                 leftEl:  $( "<div>" ).addClass( defs.left ).appendTo( el ),
@@ -262,11 +262,11 @@ $.fn.islider = function( props ) {
     var item, instance;
     $( this ).each( function() {
         item = $( this );
-        if ( item.data( "tracker") ) {
-            console.log( "tracker already init", this );
+        if ( item.data( "islider") ) {
+            console.log( "islider already init", this );
         } else {
             instance = iSlider( $( this ), props ? props : {} );
-            item.data( "tracker", instance );
+            item.data( "islider", instance );
         }
     });
 

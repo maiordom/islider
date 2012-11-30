@@ -4,9 +4,9 @@
 <head>
 
     <meta charset="UTF-8">
-    <title>Tracker</title>
+    <title>iSlider</title>
 
-    <link rel="stylesheet" href="tracker.css">
+    <link rel="stylesheet" href="islider.css">
     <style type="text/css">
         * {
             margin: 0;
@@ -30,32 +30,32 @@
                 width: 300px;
                 height: 3px;
                 }
-                .example-2 .tracker__path {
+                .example-2 .islider__path {
                     height: 3px;
                     }
             .example-3 {
                 width: 400px;
                 height: 10px;
                 }
-                .example-3 .tracker__path {
+                .example-3 .islider__path {
                     height: 10px;
                     }
 
     </style>
     
     <script src="http://code.jquery.com/jquery-1.8.3.min.js"></script>
-    <script src="tracker.js"></script>
+    <script src="islider.js"></script>
     <script>
         $( document ).ready( function() {
             var e1 = $( ".example-1" ).islider( { domain: [ 0, 40000 ], min: 3000, max: 5000 } ),
                 e2 = $( ".example-2" ).islider( { domain: [ 0, 4000 ],  min: 200, max: 1000 } ),
                 e3 = $( ".example-3" ).islider( { domain: [ 0, 20000 ], min: 10000, max: 20000 } );
 
-            e1.data( "tracker" ).on( "setLeftValue", function( e, val ) {
+            e1.data( "islider" ).on( "setLeftValue", function( e, val ) {
                 console.log( val );
             });
 
-            e1.data( "tracker" ).on( "setRightValue", function( e, val ) {
+            e1.data( "islider" ).on( "setRightValue", function( e, val ) {
                 console.log( val );
             });
         });
