@@ -1,7 +1,7 @@
 (function( $, root ) {
 
 function iSlider( el, props ) {
-    var a, f, defs, event = $( {} );
+    var a, f, defs, event = {};
 
     defs = {
         islider:  "islider",
@@ -16,10 +16,12 @@ function iSlider( el, props ) {
     };
 
     f = {
-        on: function( event_name, callback, ctx ) {
-            event.bind( event_name, function() {
-                callback.apply( ctx || callback, arguments );
-            });
+        on: function( event_name, callback ) {
+            event[ event_name ] = callback;
+        },
+
+        trigger: function( event_name, data ) {
+            event[ event_name ] ? event[ event_name ].apply( null, data ) : null;
         },
 
         init: function() {
@@ -42,6 +44,9 @@ function iSlider( el, props ) {
                 rightEl: el.find( defs.right ),
                 path:    el.find( defs.path )
             };
+
+            a.leftElWidth  = a.leftEl.width();
+            a.rightElWidth = a.rightEl.width();
         },
 
         generate: function() {
@@ -52,18 +57,21 @@ function iSlider( el, props ) {
                 rightEl: $( "<div>" ).addClass( defs.right ).appendTo( el ),
                 path:    $( "<div>" ).addClass( defs.path ).appendTo( el )
             };
+
+            a.leftElWidth  = a.leftEl.width();
+            a.rightElWidth = a.rightEl.width();
         },
 
         setSliders: function() {
-            a.leftSl  = Slider( a.leftEl,  el, defs.domain, [ - a.leftEl.width() + 1, el.width() - a.leftEl.width() ] );
+            a.leftSl  = Slider( a.leftEl,  el, defs.domain, [ - a.leftElWidth + 1, el.width() - a.leftElWidth ] );
             a.rightSl = Slider( a.rightEl, el, defs.domain, [ 0, el.width() - 1 ] );
         },
 
         setFirstlyData: function() {
             a.leftSl.setValue( defs.min );
             a.rightSl.setValue( defs.max );
-            a.path.css( "left", f.getLeft() );
-            a.path.width( f.getWidth() )
+            a.path[ 0 ].style.left = f.getLeft() + "px";
+            a.path[ 0 ].style.width = f.getWidth() + "px";
         },
 
         getLeft: function() {
@@ -77,7 +85,7 @@ function iSlider( el, props ) {
         getWidth: function() {
             return f.getRight() - f.getLeft() + 1;
         },
-        
+
         bindEvents: function() {
             a.leftSl.on( "move", f.onLeftMove );
             a.rightSl.on( "move", f.onRightMove );
@@ -91,35 +99,36 @@ function iSlider( el, props ) {
             return f.getLeft() >= x;
         },
 
-        onLeftMove: function( e, val, x ) {
+        onLeftMove: function( val, x ) {
             x = parseInt( x );
 
             if ( !f.isLeftCrossing( x ) ) {
-                a.leftEl.css( "left", x );
-                a.path.css( "left", f.getLeft() );
-                a.path.width( f.getWidth() );
+                a.leftEl[ 0 ].style.left = x + "px";
+                a.path[ 0 ].style.left = f.getLeft() + "px";
+                a.path[ 0 ].style.width = f.getWidth() + "px";
             } else {
-                x = a.rightSl.getX() - a.rightEl.width() + 1;
-                a.leftEl.css( "left", x );
-                a.path.width( 0 );
+                x = a.rightSl.getX() - a.rightElWidth + 1;
+                a.leftEl[ 0 ].style.left = x + "px";
+                a.path[ 0 ].style.width = "0px";
             }
 
-            event.trigger( "setLeftValue", [ a.leftSl.getValue( x ), x ] );
+            f.trigger( "setLeftValue", [ a.leftSl.getValue( x ), x ] );
         },
 
-        onRightMove: function( e, val, x ) {
+        onRightMove: function( val, x ) {
             x = parseInt( x );
 
             if ( !f.isRightCrossing( x ) ) {
-                a.rightEl.css( "left", x );
-                a.path.width( f.getWidth() );
+                a.rightEl[ 0 ].style.left = x + "px";
+                a.path[ 0 ].style.left = f.getLeft() + "px";
+                a.path[ 0 ].style.width = f.getWidth() + "px";
             } else {
-                x = a.leftSl.getX() + a.leftEl.width() - 1;
-                a.rightEl.css( "left", x );
-                a.path.width( 0 );
+                x = a.leftSl.getX() + a.leftElWidth - 1;
+                a.rightEl[ 0 ].style.left = x + "px";
+                a.path[ 0 ].style.width = "0px";
             }
 
-            event.trigger( "setRightValue", [ a.rightSl.getValue( x ), x ] );
+            f.trigger( "setRightValue", [ a.rightSl.getValue( x ), x ] );
         }
     };
 
@@ -131,7 +140,7 @@ function iSlider( el, props ) {
 }
 
 function Slider( el, ctx, domain, range ) {
-    var a, event = $( {} ), f;
+    var a, event = {}, f;
 
     f = {
         cacheObjects: function() {
@@ -145,13 +154,15 @@ function Slider( el, ctx, domain, range ) {
             a.scaleValToX = f.scale( domain, range );
             a.scaleXToVal = f.scale( range, domain );
             a.moveOffsetX = a.xMin;
-            el.css( { top: - el.height() + 1 } );
+            el[ 0 ].style.top = - el.height() + 1 + "px";
         },
 
-        on: function( event_name, callback, ctx ) {
-            event.bind( event_name, function() {
-                callback.apply( ctx || callback, arguments );
-            });
+        on: function( event_name, callback ) {
+            event[ event_name ] = callback;
+        },
+
+        trigger: function( event_name, data ) {
+            event[ event_name ] ? event[ event_name ].apply( null, data ) : null;
         },
 
         bindEvents: function() {
@@ -208,7 +219,7 @@ function Slider( el, ctx, domain, range ) {
                 moveX = a.xMax;
             }
 
-            event.trigger( "move", [ f.getValue(), moveX ] );
+            f.trigger( "move", [ f.getValue(), moveX ] );
         },
 
         setValue: function( val ) {
@@ -216,7 +227,7 @@ function Slider( el, ctx, domain, range ) {
         },
 
         getX: function() {
-            return a.el.position().left;
+            return a.el[ 0 ].offsetLeft;
         },
 
         getValue: function( x ) {
@@ -224,7 +235,7 @@ function Slider( el, ctx, domain, range ) {
         },
 
         setPosition: function( x ) {
-            a.el.css( "left", parseInt( x ) );
+            a.el[ 0 ].style.left = parseInt( x ) + "px";
         },
 
         setMouseOffset: function( e ) {
@@ -256,7 +267,7 @@ function Slider( el, ctx, domain, range ) {
         getX: f.getX,
         range: range
     }
-};
+}
 
 $.fn.islider = function( props ) {
     var item, instance;

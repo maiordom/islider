@@ -51,11 +51,11 @@
                 e2 = $( ".example-2" ).islider( { domain: [ 0, 4000 ],  min: 200, max: 1000 } ),
                 e3 = $( ".example-3" ).islider( { domain: [ 0, 20000 ], min: 10000, max: 20000 } );
 
-            e1.data( "islider" ).on( "setLeftValue", function( e, val ) {
+            e1.data( "islider" ).on( "setLeftValue", function( val ) {
                 console.log( val );
             });
 
-            e1.data( "islider" ).on( "setRightValue", function( e, val ) {
+            e1.data( "islider" ).on( "setRightValue", function( val ) {
                 console.log( val );
             });
         });
