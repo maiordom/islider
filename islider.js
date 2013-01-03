@@ -88,7 +88,9 @@ function iSlider( el, props ) {
 
         bindEvents: function() {
             a.leftSl.on( "move", f.onLeftMove );
+            a.leftSl.on( "moveEnd", f.onLeftSlMoveEnd );
             a.rightSl.on( "move", f.onRightMove );
+            a.rightSl.on( "moveEnd", f.onRightSlMoveEnd );
         },
 
         isLeftCrossing: function( x ) {
@@ -97,6 +99,14 @@ function iSlider( el, props ) {
 
         isRightCrossing: function( x ) {
             return f.getLeft() >= x;
+        },
+
+        onLeftSlMoveEnd: function() {
+            f.trigger( "leftMoveEnd" );
+        },
+
+        onRightSlMoveEnd: function() {
+            f.trigger( "rightMoveEnd" );
         },
 
         onLeftMove: function( val, x ) {
@@ -135,7 +145,8 @@ function iSlider( el, props ) {
     f.init();
 
     return {
-        on: f.on
+        on: f.on,
+        reset: f.setFirstlyData
     };
 }
 
@@ -252,6 +263,7 @@ function Slider( el, ctx, domain, range ) {
             a.isActive = false;
             document.body.onselectstart = null;
             document.ondragstart = null;
+            f.trigger( "moveEnd" );
 
             $( document.body ).unbind( "mousemove.slider mouseup.slider" );
         }
@@ -266,7 +278,7 @@ function Slider( el, ctx, domain, range ) {
         getValue: f.getValue,
         getX: f.getX,
         range: range
-    }
+    };
 }
 
 $.fn.islider = function( props ) {
