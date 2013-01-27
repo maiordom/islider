@@ -17,29 +17,29 @@
             height: 100%;
             }
         .wrapper {
-            float: left;
             }
-            .example {
-                float: left;
-                margin: 50px;
+            .example-wrapper {
+                padding: 50px;
                 }
-            .example-1 {
-                width: 200px;
-                }
-            .example-2 {
-                width: 300px;
-                height: 3px;
-                }
-                .example-2 .islider__path {
+                .example {
+                    }
+                .example-1 {
+                    width: 200px;
+                    }
+                .example-2 {
+                    width: 300px;
                     height: 3px;
                     }
-            .example-3 {
-                width: 400px;
-                height: 10px;
-                }
-                .example-3 .islider__path {
+                    .example-2 .islider__path {
+                        height: 3px;
+                        }
+                .example-3 {
+                    width: 400px;
                     height: 10px;
                     }
+                    .example-3 .islider__path {
+                        height: 10px;
+                        }
 
     </style>
     
@@ -66,11 +66,15 @@
 <body>
 
 <div class="wrapper">
-    <div class="example example-1"></div>
-    <br />
-    <div class="example example-2"></div>
-    <br />
-    <div class="example example-3"></div>
+    <div class=example-wrapper>
+        <div class="example example-1"></div>
+    </div>
+    <div class=example-wrapper>
+        <div class="example example-2"></div>
+    </div>
+    <div class=example-wrapper>
+        <div class="example example-3"></div>
+    </div>
 </div>
 
 </body>
