@@ -18,6 +18,7 @@ function iSlider( el, props ) {
     f = {
         on: function( event_name, callback ) {
             event[ event_name ] = callback;
+            return f.interface();
         },
 
         trigger: function( event_name, data ) {
@@ -70,7 +71,7 @@ function iSlider( el, props ) {
         setFirstlyData: function() {
             a.leftSl.setValue( defs.min );
             a.rightSl.setValue( defs.max );
-            a.path[ 0 ].style.left = f.getLeft() + "px";
+            a.path[ 0 ].style.left  = f.getLeft()  + "px";
             a.path[ 0 ].style.width = f.getWidth() + "px";
         },
 
@@ -109,45 +110,65 @@ function iSlider( el, props ) {
             f.trigger( "rightMoveEnd" );
         },
 
-        onLeftMove: function( val, x ) {
+        onLeftMove: function( x ) {
             x = parseInt( x );
-
-            if ( !f.isLeftCrossing( x ) ) {
-                a.leftEl[ 0 ].style.left = x + "px";
-                a.path[ 0 ].style.left = f.getLeft() + "px";
-                a.path[ 0 ].style.width = f.getWidth() + "px";
-            } else {
-                x = a.rightSl.getX() - a.rightElWidth + 1;
-                a.leftEl[ 0 ].style.left = x + "px";
-                a.path[ 0 ].style.width = "0px";
-            }
-
+            f.moveToLeft( x );
             f.trigger( "setLeftValue", [ a.leftSl.getValue( x ), x ] );
         },
 
-        onRightMove: function( val, x ) {
+        onRightMove: function( x ) {
             x = parseInt( x );
+            f.moveToRight( x );
+            f.trigger( "setRightValue", [ a.rightSl.getValue( x ), x ] );
+        },
 
+        moveToLeft: function( x ) {
+            if ( !f.isLeftCrossing( x ) ) {
+                a.leftEl[ 0 ].style.left = x + "px";
+                a.path[ 0 ].style.left   = f.getLeft() + "px";
+                a.path[ 0 ].style.width  = f.getWidth() + "px";
+            } else {
+                x = a.rightSl.getX() - a.rightElWidth + 1;
+                a.leftEl[ 0 ].style.left = x + "px";
+                a.path[ 0 ].style.width  = "0px";
+            }
+        },
+
+        moveToRight: function( x ) {
             if ( !f.isRightCrossing( x ) ) {
                 a.rightEl[ 0 ].style.left = x + "px";
-                a.path[ 0 ].style.left = f.getLeft() + "px";
-                a.path[ 0 ].style.width = f.getWidth() + "px";
+                a.path[ 0 ].style.left    = f.getLeft() + "px";
+                a.path[ 0 ].style.width   = f.getWidth() + "px";
             } else {
                 x = a.leftSl.getX() + a.leftElWidth - 1;
                 a.rightEl[ 0 ].style.left = x + "px";
-                a.path[ 0 ].style.width = "0px";
+                a.path[ 0 ].style.width   = "0px";
             }
+        },
 
-            f.trigger( "setRightValue", [ a.rightSl.getValue( x ), x ] );
+        leftVal: function( val ) {
+            a.leftSl.setValue( val );
+            f.moveToLeft( a.leftSl.getX() );
+        },
+
+        rightVal: function( val ) {
+            a.rightSl.setValue( val );
+            f.moveToRight( a.rightSl.getX() );
+        },
+        
+        interface: function() {
+            return {
+                on:       f.on,
+                reset:    f.setFirstlyData,
+                leftVal:  f.leftVal,
+                rightVal: f.rightVal
+            };
         }
     };
 
     f.init();
 
-    return {
-        on: f.on,
-        reset: f.setFirstlyData
-    };
+    return f.interface();
 }
 
 function Slider( el, ctx, domain, range ) {
@@ -221,31 +242,31 @@ function Slider( el, ctx, domain, range ) {
         },
 
         moveHandler: function( e ) {
-            var moveOffsetX = e.pageX - a.mouseOffset.x - a.sliderOffset.left,
-                moveX = moveOffsetX + a.tmpX;
+            var offset = e.pageX - a.mouseOffset.x - a.sliderOffset.left,
+                x = offset + a.tmpX;
 
-            if ( a.xMin > moveX ) {
-                moveX = a.xMin;
-            } else if ( moveX > a.xMax ) {
-                moveX = a.xMax;
+            if ( a.xMin > x ) {
+                x = a.xMin;
+            } else if ( x > a.xMax ) {
+                x = a.xMax;
             }
 
-            f.trigger( "move", [ f.getValue(), moveX ] );
+            f.trigger( "move", [ x ] );
         },
 
         setValue: function( val ) {
-            f.setPosition( a.scaleValToX( val ) );
-        },
-
-        getX: function() {
-            return a.el[ 0 ].offsetLeft;
+            f.setX( a.scaleValToX( val ) );
         },
 
         getValue: function( x ) {
             return a.scaleXToVal( x ? x : f.getX() );
         },
 
-        setPosition: function( x ) {
+        getX: function() {
+            return a.el[ 0 ].offsetLeft;
+        },
+
+        setX: function( x ) {
             a.el[ 0 ].style.left = parseInt( x ) + "px";
         },
 
