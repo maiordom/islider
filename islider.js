@@ -1,7 +1,8 @@
-(function( $, root ) {
+(function( $, root, undefined ) {
+    'use strict';
 
 function iSlider( el, props ) {
-    var a, f, defs, event = {}, metricType, coordType;
+    var a, f, defs, event = {}, collisionOffset = 0, metricType, coordType, isVertical = false;
 
     defs = {
         islider:     'islider',
@@ -18,37 +19,39 @@ function iSlider( el, props ) {
         value:       0,
         domain:      [ 0, 1 ],
         values:      [ 0, 0 ],
-        coords:      [ 0, 0 ]
+        onSlide:     function( value, values ) {}
     };
 
     f = {
-        on: function( event_name, callback ) {
-            event[ event_name ] = callback;
+        on: function( eventName, callback ) {
+            event[ eventName ] = callback;
             return f.interface();
         },
 
-        trigger: function( event_name, data ) {
-            event[ event_name ] ? event[ event_name ].apply( null, data ) : null;
+        trigger: function( eventName, data ) {
+            if ( event[ eventName ] ) { event[ eventName ].apply( null, data ); }
         },
 
         init: function() {
             f.extend();
             f.cache();
+            f.setCollisionOffset();
+            f.setPathMargin();
             f.setSliders();
             f.isRangeSingle();
             f.setInitialData();
             f.bindEvents();
         },
 
-        bindEvents: function() {            
-            a.leftSl.on( 'move', f.onLeftMove );
-            a.leftSl.on( 'stopSlide', f.onStopSlide );
-            a.rightSl.on( 'move', f.onRightMove );
+        bindEvents: function() {
+            a.leftSl.on( 'move',       f.onLeftMove );
+            a.leftSl.on( 'stopSlide',  f.onStopSlide );
+            a.rightSl.on( 'move',      f.onRightMove );
             a.rightSl.on( 'stopSlide', f.onStopSlide );
 
-            a.slider.mousedown( f.onStartSlide );
-            a.slider.mouseenter( f.onHoverEl );
-            a.slider.mouseleave( f.onUnhoverEl );
+            a.slider.on( 'mousedown touchstart', f.onStartSlide );
+            a.slider.on( 'mouseenter', f.onHoverEl );
+            a.slider.on( 'mouseleave', f.onUnhoverEl );
         },
 
         hasCollision: function() {
@@ -65,6 +68,7 @@ function iSlider( el, props ) {
 
         onStopSlide: function() {
             a.actSl.el.removeClass( defs.active );
+            el.trigger( 'islider.stop-slide' );
         },
 
         onStartSlide: function( e ) {
@@ -79,6 +83,8 @@ function iSlider( el, props ) {
             }
 
             a.actSl.el.addClass( defs.active );
+
+            return false;
         },
 
         extend: function() {
@@ -88,7 +94,7 @@ function iSlider( el, props ) {
         cache: function() {
             el.addClass( defs.islider );
 
-            if ( defs.generate ) { f.generate() }
+            if ( defs.generate ) { f.generate(); }
 
             a = {
                 actSl:   null,
@@ -98,14 +104,33 @@ function iSlider( el, props ) {
                 path:    el.find( '.' + defs.path )
             };
 
-            metricType      = defs.orientation === 'vertical' ? 'height' : 'width';
-            coordType       = defs.orientation === 'vertical' ? 'top' : 'left';
+            isVertical = defs.orientation === 'vertical';
+            metricType = isVertical ? 'height' : 'width';
+            coordType  = isVertical ? 'top' : 'left';
+            a.handleMetric = a.leftEl[ metricType ]() || a.rightEl[ metricType ]();
+            f.setPath  = defs.range === true ? f.setPath : defs.range === 'min' ? f.setMinPath : f.setMaxPath;
+        },
 
-            a.elOffset      = a.leftEl[ metricType ]() / 2;
-            a.leftElMetric  = a.leftEl[ metricType ]();
-            a.rightElMetric = a.rightEl[ metricType ]();
+        setCollisionOffset: function() {
+            if ( defs.range === true ) {
+                collisionOffset = a.handleMetric;
+            }
+        },
 
-            f.setPath = defs.range !== true ? f.setRangeMinMaxPath : f.setPath;
+        setPathMargin: function() {
+            if ( isVertical && defs.range === true ) {
+                a.path.css( 'marginTop', collisionOffset / 2 );
+            } else if ( defs.range === true ) {
+                a.path.css( 'marginLeft', collisionOffset / 2 );
+            }
+        },
+        
+        getTotalWidth: function() {
+            if ( defs.orientation === 'vertical' ) {
+                return el[ 0 ].offsetHeight;
+            } else {
+                return el[ 0 ].offsetWidth;
+            }
         },
 
         isRangeSingle: function() {
@@ -121,30 +146,55 @@ function iSlider( el, props ) {
 
         generate: function() {
             $( '<div>' ).addClass( defs.left ).addClass( defs.slider ).appendTo( el );
-            $( '<div>' ).addClass( defs.right ).addClass( defs.slider ).appendTo( el );                
+            $( '<div>' ).addClass( defs.right ).addClass( defs.slider ).appendTo( el );
             $( '<div>' ).addClass( defs.path ).appendTo( el );
         },
 
         setSliders: function() {
-            a.leftSl  = Slider( a.leftEl,  defs.orientation, defs.domain, [ 0, el[ metricType ]() - a.leftElMetric ] );
-            a.rightSl = Slider( a.rightEl, defs.orientation, defs.domain, [ 0, el[ metricType ]() - a.rightElMetric ] );
+            a.leftSl  = Slider({
+                handle:        a.leftEl,
+                getTotalWidth: f.getTotalWidth,
+                orientation:   defs.orientation,
+                domain:        defs.domain,
+
+                getRange: function() {
+                    return [ 0, f.getTotalWidth() - a.handleMetric * ( defs.range === true ? 2 : 1 ) ];
+                }
+            });
+
+            a.rightSl = Slider({
+                handle:        a.rightEl,
+                getTotalWidth: f.getTotalWidth,
+                orientation:   defs.orientation,
+                domain:        defs.domain,
+
+                getRange: function() {
+                    return [ a.handleMetric, f.getTotalWidth() - a.handleMetric ];
+                }
+            });
         },
 
         setInitialData: function() {
-            a.leftSl.setValue( defs.values[ 0 ] );
-            a.rightSl.setValue( defs.values[ 1 ] );
-            defs.coords[ 0 ] = a.leftSl.getCoord();
-            defs.coords[ 1 ] = a.rightSl.getCoord();
+            if ( defs.range === true ) {
+                a.leftSl.setValue( defs.values[ 0 ] );
+                a.rightSl.setValue( defs.values[ 1 ] );
+            } else {
+                a.leftSl.setValue( defs.value );
+            }
+
             f.setPath();
-            defs.range === 'min' ? a.leftEl.hide() : defs.range === 'max' ? a.rightEl.hide() : null;
+
+            if ( defs.range !== true ) {
+                a.rightEl.hide();
+            }
         },
 
         getLeft: function() {
-            return defs.coords[ 0 ];
+            return a.leftSl.getCoord();
         },
 
         getRight: function() {
-            return defs.coords[ 1 ];
+            return a.rightSl.getCoord();
         },
 
         getWidth: function() {
@@ -152,68 +202,80 @@ function iSlider( el, props ) {
         },
 
         isLeftCrossing: function( x ) {
-            return x >= defs.coords[ 1 ];
+            return x + collisionOffset >= f.getRight();
         },
 
         isRightCrossing: function( x ) {
-            return x <= defs.coords[ 0 ];
+            return x <= f.getLeft() + collisionOffset;
         },
 
-        onLeftMove: function( e, x ) {
-            f.LeftMoveHandler( x );
-            f.trigger( 'slide', [ defs.values[ 0 ], [ defs.values[ 0 ], defs.values[ 1 ] ] ] );
+        onLeftMove: function( x ) {
+            f.leftMoveHandler( x );
+            defs.onSlide( defs.values[ 0 ], [ defs.values[ 0 ], defs.values[ 1 ] ], 'left' );
+            console.log( defs.values[ 0 ] );
         },
 
-        onRightMove: function( e, x ) {
+        onRightMove: function( x ) {
             f.rightMoveHandler( x );
-            f.trigger( 'slide', [ defs.values[ 1 ], [ defs.values[ 0 ], defs.values[ 1 ] ] ] );
+            defs.onSlide( defs.values[ 1 ], [ defs.values[ 0 ], defs.values[ 1 ] ], 'right' );
+            console.log( defs.values[ 1 ] );
         },
 
-        LeftMoveHandler: function( x ) {
-            x = parseInt( x );
-            x = f.isLeftCrossing( x ) ? f.getRight() : x;
-            defs.coords[ 0 ] = x;
-            defs.values[ 0 ] = a.leftSl.getValue( x );
+        leftMoveHandler: function( x ) {
+            x = parseInt( x, 10 );
+            if ( defs.range === true && f.isLeftCrossing( x ) ) {
+                x = f.getRight() - collisionOffset;
+                defs.values[ 0 ] = defs.values[ 1 ];
+            } else {
+                defs.values[ 0 ] = a.leftSl.getValue( x );
+            }
             f.moveToLeft( x );
             f.setPath();
         },
 
         rightMoveHandler: function( x ) {
-            x = parseInt( x );
-            x = f.isRightCrossing( x ) ? f.getLeft() : x;
-            defs.coords[ 1 ] = x;
-            defs.values[ 1 ] = a.rightSl.getValue( x );
+            x = parseInt( x, 10 );
+            if ( defs.range === true && f.isRightCrossing( x ) ) {
+                x = f.getLeft() + collisionOffset;
+                defs.values[ 1 ] = defs.values[ 0 ];
+            } else {
+                defs.values[ 1 ] = a.rightSl.getValue( x );
+            }
             f.moveToRight( x );
             f.setPath();
         },
 
         setPath: function() {
-            a.path[ 0 ].style[ metricType ] = f.getWidth() + 'px';
-            a.path[ 0 ].style[ coordType ]  = f.getLeft()  + a.elOffset + 'px';
+            a.path[ 0 ].style[ metricType ] = ( f.getWidth() / f.getTotalWidth() ) * 100 + '%';
+            a.path[ 0 ].style[ coordType ]  = ( f.getLeft() / f.getTotalWidth() ) * 100 + '%';
         },
 
-        setRangeMinMaxPath: function() {
-            a.path[ 0 ].style[ metricType ] = f.getWidth() + a.elOffset + 'px';
+        setMaxPath: function() {
+            a.path[ 0 ].style[ metricType ] = 100 - ( ( f.getLeft() + a.handleMetric / 2 ) / f.getTotalWidth() ) * 100 + '%';
+        },
+
+        setMinPath: function() {
+            a.path[ 0 ].style[ metricType ] = ( ( f.getLeft() + a.handleMetric / 2 ) / f.getTotalWidth() ) * 100 + '%';
         },
 
         moveToLeft: function( x ) {
-            a.leftEl[ 0 ].style[ coordType ] = x + 'px';
+            a.leftEl[ 0 ].style[ coordType ] = ( x / f.getTotalWidth() ) * 100 + '%';
         },
 
-        moveToRight: function( x ) {            
-            a.rightEl[ 0 ].style[ coordType ] = x + 'px';
+        moveToRight: function( x ) {
+            a.rightEl[ 0 ].style[ coordType ] = ( x / f.getTotalWidth() ) * 100 + '%';
         },
 
         leftVal: function( val ) {
             a.leftSl.setValue( val );
-            f.LeftMoveHandler( a.leftSl.getCoord() );
+            f.leftMoveHandler( a.leftSl.getCoord() );
         },
 
         rightVal: function( val ) {
             a.rightSl.setValue( val );
             f.rightMoveHandler( a.rightSl.getCoord() );
         },
-        
+
         interface: function() {
             return {
                 on:       f.on,
@@ -229,33 +291,55 @@ function iSlider( el, props ) {
     return f.interface();
 }
 
-function Slider( el, orientation, domain, range ) {
-    var a, event = $( {} ), f;
+function Slider( props ) {
+    var a, event = {}, f, range;
 
     f = {
         cacheObjects: function() {
-            a = {
-                el: el,
-                xMin: range[ 0 ],
-                xMax: range[ 1 ],
-            };
+            a = { el: props.handle };
+            f.moveHandler = props.orientation === 'vertical' ? f.moveVerticalHandler : f.moveHorizontalHandler;
+            f.setCoord    = props.orientation === 'vertical' ? f.setY : f.setX;
+            f.getCoord    = props.orientation === 'vertical' ? f.getY : f.getX;
+        },
 
+        reset: function() {
+            var range = props.getRange();
+            f.setRange( range );
+            f.setScale( range, props.domain );
+        },
+
+        setRange: function( range ) {
+            a.xMin = range[ 0 ];
+            a.xMax = range[ 1 ];
+        },
+
+        setScale: function( range, domain ) {
             a.scaleValToCoord = f.scale( domain, range );
             a.scaleCoordToVal = f.scale( range, domain );
         },
 
-        on: function( event_name, callback ) {
-            event.on( event_name, callback );
+        on: function( eventName, callback ) {
+            event[ eventName ] = callback;
         },
 
-        trigger: function( event_name, data ) {
-            event.trigger( event_name, data );
+        trigger: function( eventName, data ) {
+            if ( event[ eventName ] ) { event[ eventName ].apply( null, data ); }
         },
 
         startSlide: function( e ) {
+            f.reset();
             f.setMouseOffset( e );
             f.addDocumentEventHandlers();
             f.trigger( 'startSlide' );
+        },
+
+        scale: function( domain, range ) {
+            var u = f.uninterpolateNumber( domain[ 0 ], domain[ 1 ] ),
+                i = f.interpolateNumber( range[ 0 ], range[ 1 ] );
+
+            return function( x ) {
+                return i( u( x ) );
+            };
         },
 
         uninterpolateNumber: function( a, b ) {
@@ -269,22 +353,13 @@ function Slider( el, orientation, domain, range ) {
             b -= a;
             return function( t ) {
                 return a + b * t;
-            }
-        },
-
-        scale: function( domain, range ) {
-            var u = f.uninterpolateNumber( domain[ 0 ], domain[ 1 ] ),
-                i = f.interpolateNumber( range[ 0 ], range[ 1 ] );
-
-            return function( x ) {
-                return i( u( x ) );
             };
         },
 
         addDocumentEventHandlers: function() {
             $( document.body ).bind({
-                'mousemove.slider': f.moveHandler,
-                'mouseup.slider': f.removeDocumentEventHandlers
+                'mousemove.slider touchmove.slider': f.moveHandler,
+                'mouseup.slider touchend.slider touchcancel.slider': f.removeDocumentEventHandlers
             });
 
             document.body.onselectstart = function() { return false; };
@@ -292,7 +367,7 @@ function Slider( el, orientation, domain, range ) {
         },
 
         moveVerticalHandler: function( e ) {
-            var offset = e.pageY - a.mouseOffset.y - a.sliderOffset.top,
+            var offset = f.getEventY( e ) - a.mouseOffset.y - a.sliderOffset.top,
                 x = offset + a.tmpCoord;
 
             if ( a.xMin > x ) {
@@ -305,7 +380,7 @@ function Slider( el, orientation, domain, range ) {
         },
 
         moveHorizontalHandler: function( e ) {
-            var offset = e.pageX - a.mouseOffset.x - a.sliderOffset.left,
+            var offset = f.getEventX( e ) - a.mouseOffset.x - a.sliderOffset.left,
                 x = offset + a.tmpCoord;
 
             if ( a.xMin > x ) {
@@ -315,6 +390,22 @@ function Slider( el, orientation, domain, range ) {
             }
 
             f.trigger( 'move', [ x ] );
+        },
+
+        getEventX: function( e ) {
+            if ( e.type && e.type.search( 'mouse' ) !== -1 ) {
+                return e.pageX;
+            } else {
+                return ( e.originalEvent.changedTouches[ 0 ] || e.originalEventtargetTouches[ 0 ] ).pageX;
+            }
+        },
+
+        getEventY: function( e ) {
+            if ( e.type && e.type.search( 'mouse' ) !== -1 ) {
+                return e.pageY;
+            } else {
+                return ( e.originalEvent.changedTouches[ 0 ] || e.originalEventtargetTouches[ 0 ] ).pageY;
+            }
         },
 
         setValue: function( val ) {
@@ -334,44 +425,40 @@ function Slider( el, orientation, domain, range ) {
         },
 
         setX: function( x ) {
-            a.el[ 0 ].style.left = parseInt( x ) + 'px';
+            a.el[ 0 ].style.left = ( parseInt( x, 10 ) / props.getTotalWidth() ) * 100 + '%';
         },
 
         setY: function( y ) {
-            a.el[ 0 ].style.top = parseInt( y ) + 'px';
+            a.el[ 0 ].style.top = ( parseInt( y, 10 ) / props.getTotalWidth() ) * 100 + '%';
         },
 
         setMouseOffset: function( e ) {
             a.sliderOffset = a.el.offset();
-            a.tmpCoord = f.getCoord();
-
-            a.mouseOffset = {
-                x: e.pageX - a.sliderOffset.left,
-                y: e.pageY - a.sliderOffset.top
+            a.tmpCoord     = f.getCoord();
+            a.mouseOffset  = {
+                x: f.getEventX( e ) - a.sliderOffset.left,
+                y: f.getEventY( e ) - a.sliderOffset.top
             };
         },
 
         removeDocumentEventHandlers: function() {
             document.body.onselectstart = null;
             document.ondragstart = null;
-            $( document.body ).unbind( 'mousemove.slider mouseup.slider' );
+            $( document.body ).unbind( 'mousemove.slider mouseup.slider touchmove.slider' );
             f.trigger( 'stopSlide' );
         }
     };
 
     f.cacheObjects();
-    f.moveHandler = orientation === 'vertical' ? f.moveVerticalHandler : f.moveHorizontalHandler;
-    f.setCoord    = orientation === 'vertical' ? f.setY : f.setX;
-    f.getCoord    = orientation === 'vertical' ? f.getY : f.getX;
+    f.reset();
 
     return {
-        el: el,
-        on: f.on,
-        range: range,
+        el:         props.handle,
+        on:         f.on,
         startSlide: f.startSlide,
-        setValue: f.setValue,
-        getValue: f.getValue,
-        getCoord: f.getCoord
+        setValue:   f.setValue,
+        getValue:   f.getValue,
+        getCoord:   f.getCoord
     };
 }
 
@@ -382,7 +469,7 @@ $.fn.islider = function( props ) {
         if ( item.data( 'islider' ) ) {
             console.log( 'islider already init', this );
         } else {
-            instance = iSlider( $( this ), props ? props : {} );
+            instance = iSlider( item, props ? props : {} );
             item.data( 'islider', instance );
         }
     });
@@ -390,4 +477,4 @@ $.fn.islider = function( props ) {
     return this;
 };
 
-})( jQuery, window );
+})( jQuery, window, undefined );
