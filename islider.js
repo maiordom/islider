@@ -14,6 +14,7 @@ function iSlider( el, props ) {
         active:      'islider_active',
         focus:       'islider_focus',
         orientation: 'horizontal',
+        step:        1,
         generate:    true,
         range:       'min',
         value:       0,
@@ -156,6 +157,7 @@ function iSlider( el, props ) {
                 getTotalWidth: f.getTotalWidth,
                 orientation:   defs.orientation,
                 domain:        defs.domain,
+                step:          defs.step,
 
                 getRange: function() {
                     return [ 0, f.getTotalWidth() - a.handleMetric * ( defs.range === true ? 2 : 1 ) ];
@@ -167,6 +169,7 @@ function iSlider( el, props ) {
                 getTotalWidth: f.getTotalWidth,
                 orientation:   defs.orientation,
                 domain:        defs.domain,
+                step:          defs.step,
 
                 getRange: function() {
                     return [ a.handleMetric, f.getTotalWidth() - a.handleMetric ];
@@ -222,7 +225,6 @@ function iSlider( el, props ) {
         },
 
         leftMoveHandler: function( x ) {
-            x = parseInt( x, 10 );
             if ( defs.range === true && f.isLeftCrossing( x ) ) {
                 x = f.getRight() - collisionOffset;
                 defs.values[ 0 ] = defs.values[ 1 ];
@@ -234,7 +236,6 @@ function iSlider( el, props ) {
         },
 
         rightMoveHandler: function( x ) {
-            x = parseInt( x, 10 );
             if ( defs.range === true && f.isRightCrossing( x ) ) {
                 x = f.getLeft() + collisionOffset;
                 defs.values[ 1 ] = defs.values[ 0 ];
@@ -303,7 +304,7 @@ function Slider( props ) {
         },
 
         reset: function() {
-            var range = props.getRange();
+            range = props.getRange();
             f.setRange( range );
             f.setScale( range, props.domain );
         },
@@ -366,6 +367,19 @@ function Slider( props ) {
             document.ondragstart = function() { return false; };
         },
 
+        trimMouseValue: function( x ) {
+            var val        = a.scaleCoordToVal( x ),
+                step       = ( props.step > 0 ) ? props.step : 1,
+                valModStep = ( val - range[ 0 ] ) % step,
+                alignValue = val - valModStep;
+
+            if ( Math.abs( valModStep ) * 2 >= step ) {
+                alignValue += ( valModStep > 0 ) ? step : ( - step );
+            }
+
+            return a.scaleValToCoord( alignValue );
+        },
+
         moveVerticalHandler: function( e ) {
             var offset = f.getEventY( e ) - a.mouseOffset.y - a.sliderOffset.top,
                 x = offset + a.tmpCoord;
@@ -374,6 +388,8 @@ function Slider( props ) {
                 x = a.xMin;
             } else if ( x > a.xMax ) {
                 x = a.xMax;
+            } else if ( props.step > 1 ) {
+                x = f.trimMouseValue( x );
             }
 
             f.trigger( 'move', [ x ] );
@@ -387,6 +403,8 @@ function Slider( props ) {
                 x = a.xMin;
             } else if ( x > a.xMax ) {
                 x = a.xMax;
+            } else if ( props.step > 1 ) {
+                x = f.trimMouseValue( x );
             }
 
             f.trigger( 'move', [ x ] );
