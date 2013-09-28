@@ -152,24 +152,22 @@ function iSlider( el, props ) {
         },
 
         setSliders: function() {
-            a.leftSl  = Slider({
-                handle:        a.leftEl,
-                getTotalWidth: f.getTotalWidth,
+            a.leftSl = Slider( a.leftEl, {
                 orientation:   defs.orientation,
                 domain:        defs.domain,
                 step:          defs.step,
+                getTotalWidth: f.getTotalWidth,
 
                 getRange: function() {
                     return [ 0, f.getTotalWidth() - a.handleMetric * ( defs.range === true ? 2 : 1 ) ];
                 }
             });
 
-            a.rightSl = Slider({
-                handle:        a.rightEl,
-                getTotalWidth: f.getTotalWidth,
+            a.rightSl = Slider( a.rightEl, {
                 orientation:   defs.orientation,
                 domain:        defs.domain,
                 step:          defs.step,
+                getTotalWidth: f.getTotalWidth,
 
                 getRange: function() {
                     return [ a.handleMetric, f.getTotalWidth() - a.handleMetric ];
@@ -215,13 +213,11 @@ function iSlider( el, props ) {
         onLeftMove: function( x ) {
             f.leftMoveHandler( x );
             defs.onSlide( defs.values[ 0 ], [ defs.values[ 0 ], defs.values[ 1 ] ], 'left' );
-            console.log( defs.values[ 0 ] );
         },
 
         onRightMove: function( x ) {
             f.rightMoveHandler( x );
             defs.onSlide( defs.values[ 1 ], [ defs.values[ 0 ], defs.values[ 1 ] ], 'right' );
-            console.log( defs.values[ 1 ] );
         },
 
         leftMoveHandler: function( x ) {
@@ -231,7 +227,7 @@ function iSlider( el, props ) {
             } else {
                 defs.values[ 0 ] = a.leftSl.getValue( x );
             }
-            f.moveToLeft( x );
+            a.leftSl.setCoord( x );
             f.setPath();
         },
 
@@ -242,7 +238,7 @@ function iSlider( el, props ) {
             } else {
                 defs.values[ 1 ] = a.rightSl.getValue( x );
             }
-            f.moveToRight( x );
+            a.rightSl.setCoord( x );
             f.setPath();
         },
 
@@ -257,14 +253,6 @@ function iSlider( el, props ) {
 
         setMinPath: function() {
             a.path[ 0 ].style[ metricType ] = ( ( f.getLeft() + a.handleMetric / 2 ) / f.getTotalWidth() ) * 100 + '%';
-        },
-
-        moveToLeft: function( x ) {
-            a.leftEl[ 0 ].style[ coordType ] = ( x / f.getTotalWidth() ) * 100 + '%';
-        },
-
-        moveToRight: function( x ) {
-            a.rightEl[ 0 ].style[ coordType ] = ( x / f.getTotalWidth() ) * 100 + '%';
         },
 
         leftVal: function( val ) {
@@ -292,12 +280,16 @@ function iSlider( el, props ) {
     return f.interface();
 }
 
-function Slider( props ) {
-    var a, event = {}, f, range;
+function Slider( el, props ) {
+    var events = {}, f, range, xMin, xMax, scaleValToCoord, scaleCoordToVal,
+        sliderOffset, tmpCoord, mouseOffset;
 
     f = {
+        moveHandler: function() {},
+        setCoord: function() {},
+        getCoord: function() {},
+
         cacheObjects: function() {
-            a = { el: props.handle };
             f.moveHandler = props.orientation === 'vertical' ? f.moveVerticalHandler : f.moveHorizontalHandler;
             f.setCoord    = props.orientation === 'vertical' ? f.setY : f.setX;
             f.getCoord    = props.orientation === 'vertical' ? f.getY : f.getX;
@@ -310,21 +302,21 @@ function Slider( props ) {
         },
 
         setRange: function( range ) {
-            a.xMin = range[ 0 ];
-            a.xMax = range[ 1 ];
+            xMin = range[ 0 ];
+            xMax = range[ 1 ];
         },
 
         setScale: function( range, domain ) {
-            a.scaleValToCoord = f.scale( domain, range );
-            a.scaleCoordToVal = f.scale( range, domain );
+            scaleValToCoord = f.scale( domain, range );
+            scaleCoordToVal = f.scale( range, domain );
         },
 
         on: function( eventName, callback ) {
-            event[ eventName ] = callback;
+            events[ eventName ] = callback;
         },
 
         trigger: function( eventName, data ) {
-            if ( event[ eventName ] ) { event[ eventName ].apply( null, data ); }
+            if ( events[ eventName ] ) { events[ eventName ].apply( null, data ); }
         },
 
         startSlide: function( e ) {
@@ -358,17 +350,21 @@ function Slider( props ) {
         },
 
         addDocumentEventHandlers: function() {
-            $( document.body ).bind({
+            $( document.body ).on({
                 'mousemove.slider touchmove.slider': f.moveHandler,
                 'mouseup.slider touchend.slider touchcancel.slider': f.removeDocumentEventHandlers
             });
 
-            document.body.onselectstart = function() { return false; };
-            document.ondragstart = function() { return false; };
+            document.body.onselectstart = f.returnNull;
+            document.ondragstart = f.returnNull;
+        },
+
+        returnNull: function() {
+            return false;
         },
 
         trimMouseValue: function( x ) {
-            var val        = a.scaleCoordToVal( x ),
+            var val        = scaleCoordToVal( x ),
                 step       = ( props.step > 0 ) ? props.step : 1,
                 valModStep = ( val - range[ 0 ] ) % step,
                 alignValue = val - valModStep;
@@ -377,17 +373,17 @@ function Slider( props ) {
                 alignValue += ( valModStep > 0 ) ? step : ( - step );
             }
 
-            return a.scaleValToCoord( alignValue );
+            return scaleValToCoord( alignValue );
         },
 
         moveVerticalHandler: function( e ) {
-            var offset = f.getEventY( e ) - a.mouseOffset.y - a.sliderOffset.top,
-                x = offset + a.tmpCoord;
+            var offset = f.getEventY( e ) - mouseOffset.y - sliderOffset.top,
+                x = offset + tmpCoord;
 
-            if ( a.xMin > x ) {
-                x = a.xMin;
-            } else if ( x > a.xMax ) {
-                x = a.xMax;
+            if ( xMin > x ) {
+                x = xMin;
+            } else if ( x > xMax ) {
+                x = xMax;
             } else if ( props.step > 1 ) {
                 x = f.trimMouseValue( x );
             }
@@ -396,13 +392,13 @@ function Slider( props ) {
         },
 
         moveHorizontalHandler: function( e ) {
-            var offset = f.getEventX( e ) - a.mouseOffset.x - a.sliderOffset.left,
-                x = offset + a.tmpCoord;
+            var offset = f.getEventX( e ) - mouseOffset.x - sliderOffset.left,
+                x = offset + tmpCoord;
 
-            if ( a.xMin > x ) {
-                x = a.xMin;
-            } else if ( x > a.xMax ) {
-                x = a.xMax;
+            if ( xMin > x ) {
+                x = xMin;
+            } else if ( x > xMax ) {
+                x = xMax;
             } else if ( props.step > 1 ) {
                 x = f.trimMouseValue( x );
             }
@@ -427,42 +423,42 @@ function Slider( props ) {
         },
 
         setValue: function( val ) {
-            f.setCoord( a.scaleValToCoord( val ) );
+            f.setCoord( scaleValToCoord( val ) );
         },
 
         getValue: function( x ) {
-            return a.scaleCoordToVal( x ? x : f.getCoord() );
+            return scaleCoordToVal( x ? x : f.getCoord() );
         },
 
         getX: function() {
-            return a.el[ 0 ].offsetLeft;
+            return el[ 0 ].offsetLeft;
         },
 
         getY: function() {
-            return a.el[ 0 ].offsetTop;
+            return el[ 0 ].offsetTop;
         },
 
         setX: function( x ) {
-            a.el[ 0 ].style.left = ( parseInt( x, 10 ) / props.getTotalWidth() ) * 100 + '%';
+            el[ 0 ].style.left = ( parseInt( x, 10 ) / props.getTotalWidth() ) * 100 + '%';
         },
 
         setY: function( y ) {
-            a.el[ 0 ].style.top = ( parseInt( y, 10 ) / props.getTotalWidth() ) * 100 + '%';
+            el[ 0 ].style.top = ( parseInt( y, 10 ) / props.getTotalWidth() ) * 100 + '%';
         },
 
         setMouseOffset: function( e ) {
-            a.sliderOffset = a.el.offset();
-            a.tmpCoord     = f.getCoord();
-            a.mouseOffset  = {
-                x: f.getEventX( e ) - a.sliderOffset.left,
-                y: f.getEventY( e ) - a.sliderOffset.top
+            sliderOffset = el.offset();
+            tmpCoord     = f.getCoord();
+            mouseOffset  = {
+                x: f.getEventX( e ) - sliderOffset.left,
+                y: f.getEventY( e ) - sliderOffset.top
             };
         },
 
         removeDocumentEventHandlers: function() {
             document.body.onselectstart = null;
             document.ondragstart = null;
-            $( document.body ).unbind( 'mousemove.slider mouseup.slider touchmove.slider' );
+            $( document.body ).off( 'mousemove.slider mouseup.slider touchmove.slider' );
             f.trigger( 'stopSlide' );
         }
     };
@@ -471,11 +467,12 @@ function Slider( props ) {
     f.reset();
 
     return {
-        el:         props.handle,
+        el:         el,
         on:         f.on,
         startSlide: f.startSlide,
         setValue:   f.setValue,
         getValue:   f.getValue,
+        setCoord:   f.setCoord,
         getCoord:   f.getCoord
     };
 }
