@@ -2,7 +2,7 @@
     'use strict';
 
     function iSlider( el, props ) {
-        var a, f, defs, event = {}, collisionOffset = 0, metricType, coordType, isVertical = false;
+        var a, f, defs, event = {}, metricType, coordType, isVertical = false;
 
         defs = {
             islider:     'islider',
@@ -10,6 +10,7 @@
             right:       'islider__right',
             slider:      'islider__slider',
             path:        'islider__path',
+            box:         'islider__box',
             hover:       'islider_hover',
             active:      'islider_active',
             focus:       'islider_focus',
@@ -36,8 +37,7 @@
             init: function() {
                 f.extend();
                 f.cache();
-                f.setCollisionOffset();
-                f.setPathMargin();
+                f.isVertical();
                 f.setSliders();
                 f.isRangeSingle();
                 f.setInitialData();
@@ -102,7 +102,8 @@
                     slider:  el.find( '.' + defs.slider ),
                     leftEl:  el.find( '.' + defs.left ),
                     rightEl: el.find( '.' + defs.right ),
-                    path:    el.find( '.' + defs.path )
+                    path:    el.find( '.' + defs.path ),
+                    box:     el.find( '.' + defs.box )
                 };
 
                 isVertical = defs.orientation === 'vertical';
@@ -112,43 +113,43 @@
                 f.setPath  = defs.range === true ? f.setPath : defs.range === 'min' ? f.setMinPath : f.setMaxPath;
             },
 
-            setCollisionOffset: function() {
-                if ( defs.range === true ) {
-                    collisionOffset = a.handleMetric;
-                }
-            },
-
-            setPathMargin: function() {
-                if ( isVertical && defs.range === true ) {
-                    a.path.css( 'marginTop', collisionOffset / 2 );
-                } else if ( defs.range === true ) {
-                    a.path.css( 'marginLeft', collisionOffset / 2 );
-                }
-            },
-
             getTotalWidth: function() {
                 if ( defs.orientation === 'vertical' ) {
-                    return el[ 0 ].offsetHeight;
+                    return el[ 0 ].offsetHeight - a.handleMetric * ( defs.range === true ? 2 : 1 );
                 } else {
-                    return el[ 0 ].offsetWidth;
+                    return el[ 0 ].offsetWidth - a.handleMetric * ( defs.range === true ? 2 : 1 );
+                }
+            },
+
+            isVertical: function() {
+                if ( defs.orientation === 'vertical' ) {
+                    el.addClass( 'islider_vertical' );
+                    a.box.height( f.getTotalWidth() );
+                } else {
+                    el.addClass( 'islider_horizontal' );
                 }
             },
 
             isRangeSingle: function() {
                 if ( defs.range === 'min' ) {
                     defs.values[ 1 ] = defs.value;
+                    el.addClass( 'islider_min' );
                 } else if ( defs.range === 'max' ) {
+                    el.addClass( 'islider_max' );
                     var hook = defs.orientation === 'horizontal' ? 'right' : 'bottom';
                     a.path[ 0 ].style[ hook ] = 0;
                     defs.values[ 0 ] = defs.value;
                     defs.values[ 1 ] = defs.domain[ 1 ];
+                } else {
+                    el.addClass( 'islider_range' );
                 }
             },
 
             generate: function() {
-                $( '<div>' ).addClass( defs.left ).addClass( defs.slider ).appendTo( el );
-                $( '<div>' ).addClass( defs.right ).addClass( defs.slider ).appendTo( el );
-                $( '<div>' ).addClass( defs.path ).appendTo( el );
+                var box = $( '<div>' ).addClass( defs.box ).appendTo( el );
+                $( '<div>' ).addClass( defs.left ).addClass( defs.slider ).appendTo( box );
+                $( '<div>' ).addClass( defs.right ).addClass( defs.slider ).appendTo( box );
+                $( '<div>' ).addClass( defs.path ).appendTo( box );
             },
 
             setSliders: function() {
@@ -159,7 +160,7 @@
                     getTotalWidth: f.getTotalWidth,
 
                     getRange: function() {
-                        return [ 0, f.getTotalWidth() - a.handleMetric * ( defs.range === true ? 2 : 1 ) ];
+                        return [ 0, f.getTotalWidth() ];
                     }
                 });
 
@@ -170,7 +171,7 @@
                     getTotalWidth: f.getTotalWidth,
 
                     getRange: function() {
-                        return [ a.handleMetric, f.getTotalWidth() - a.handleMetric ];
+                        return [ 0, f.getTotalWidth() ];
                     }
                 });
             },
@@ -203,11 +204,11 @@
             },
 
             isLeftCrossing: function( x ) {
-                return x + collisionOffset >= f.getRight();
+                return x >= f.getRight();
             },
 
             isRightCrossing: function( x ) {
-                return x <= f.getLeft() + collisionOffset;
+                return x <= f.getLeft();
             },
 
             onLeftMove: function( x ) {
@@ -222,7 +223,7 @@
 
             leftMoveHandler: function( x ) {
                 if ( defs.range === true && f.isLeftCrossing( x ) ) {
-                    x = f.getRight() - collisionOffset;
+                    x = f.getRight();
                     defs.values[ 0 ] = defs.values[ 1 ];
                 } else {
                     defs.values[ 0 ] = a.leftSl.getValue( x );
@@ -233,7 +234,7 @@
 
             rightMoveHandler: function( x ) {
                 if ( defs.range === true && f.isRightCrossing( x ) ) {
-                    x = f.getLeft() + collisionOffset;
+                    x = f.getLeft();
                     defs.values[ 1 ] = defs.values[ 0 ];
                 } else {
                     defs.values[ 1 ] = a.rightSl.getValue( x );
@@ -248,7 +249,7 @@
             },
 
             setMaxPath: function() {
-                a.path[ 0 ].style[ metricType ] = 100 - ( ( f.getLeft() + a.handleMetric / 2 ) / f.getTotalWidth() ) * 100 + '%';
+                a.path[ 0 ].style[ metricType ] = 100 - ( f.getLeft() / f.getTotalWidth() ) * 100 + '%';
             },
 
             setMinPath: function() {
@@ -282,7 +283,7 @@
 
     function Slider( el, props ) {
         var events = {}, f, range, xMin, xMax, scaleValToCoord, scaleCoordToVal,
-            sliderOffset, tmpCoord, mouseOffset;
+            sliderOffset, tmpCoord, mouseOffset, parent;
 
         f = {
             moveHandler: function() {},
@@ -290,6 +291,7 @@
             getCoord: function() {},
 
             cacheObjects: function() {
+                parent = el.parent();
                 f.moveHandler = props.orientation === 'vertical' ? f.moveVerticalHandler : f.moveHorizontalHandler;
                 f.setCoord    = props.orientation === 'vertical' ? f.setY : f.setX;
                 f.getCoord    = props.orientation === 'vertical' ? f.getY : f.getX;
@@ -435,11 +437,11 @@
             },
 
             getX: function() {
-                return el[ 0 ].offsetLeft;
+                return el.position().left;
             },
 
             getY: function() {
-                return el[ 0 ].offsetTop;
+                return el.position().top;
             },
 
             setX: function( x ) {
