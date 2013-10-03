@@ -2,7 +2,7 @@
     'use strict';
 
     function iSlider( el, props ) {
-        var a, f, defs, event = {}, metricType, coordType, isVertical = false;
+        var a, f, defs, event = {}, metricType, coordType, isVertical = false, handleMetric;
 
         defs = {
             islider:     'islider',
@@ -15,9 +15,9 @@
             active:      'islider_active',
             focus:       'islider_focus',
             orientation: 'horizontal',
+            range:       'min',
             step:        1,
             generate:    true,
-            range:       'min',
             value:       0,
             domain:      [ 0, 1 ],
             values:      [ 0, 0 ],
@@ -36,7 +36,10 @@
 
             init: function() {
                 f.extend();
+                f.generate();
                 f.cache();
+                f.setVars();
+                f.setSetPathHandler();
                 f.isVertical();
                 f.setSliders();
                 f.isRangeSingle();
@@ -45,18 +48,14 @@
             },
 
             bindEvents: function() {
-                a.leftSl.on( 'move',       f.onLeftMove );
-                a.leftSl.on( 'stopSlide',  f.onStopSlide );
-                a.rightSl.on( 'move',      f.onRightMove );
-                a.rightSl.on( 'stopSlide', f.onStopSlide );
-
-                a.slider.on( 'mousedown touchstart', f.onStartSlide );
-                a.slider.on( 'mouseenter', f.onHoverEl );
-                a.slider.on( 'mouseleave', f.onUnhoverEl );
-            },
-
-            hasCollision: function() {
-                return f.getLeft() === f.getRight();
+                a.leftSl.on( 'move',       f.onLeftMove   );
+                a.leftSl.on( 'stopSlide',  f.onStopSlide  );
+                a.rightSl.on( 'move',      f.onRightMove  );
+                a.rightSl.on( 'stopSlide', f.onStopSlide  );
+                a.slider.on( 'mousedown',  f.onStartSlide );
+                a.slider.on( 'touchstart', f.onStartSlide );
+                a.slider.on( 'mouseenter', f.onHoverEl    );
+                a.slider.on( 'mouseleave', f.onUnhoverEl  );
             },
 
             onHoverEl: function() {
@@ -73,9 +72,7 @@
             },
 
             onStartSlide: function( e ) {
-                if ( defs.range === true && f.hasCollision() ) {
-                    a.actSl.startSlide( e );
-                } else if ( e.target === a.leftSl.el[ 0 ] ) {
+                if ( e.target === a.leftSl.el[ 0 ] ) {
                     a.actSl = a.leftSl;
                     a.leftSl.startSlide( e );
                 } else if ( e.target === a.rightSl.el[ 0 ] ) {
@@ -95,8 +92,6 @@
             cache: function() {
                 el.addClass( defs.islider );
 
-                if ( defs.generate ) { f.generate(); }
-
                 a = {
                     actSl:   null,
                     slider:  el.find( '.' + defs.slider ),
@@ -105,19 +100,24 @@
                     path:    el.find( '.' + defs.path ),
                     box:     el.find( '.' + defs.box )
                 };
+            },
 
-                isVertical = defs.orientation === 'vertical';
-                metricType = isVertical ? 'height' : 'width';
-                coordType  = isVertical ? 'top' : 'left';
-                a.handleMetric = a.leftEl[ metricType ]() || a.rightEl[ metricType ]();
-                f.setPath  = defs.range === true ? f.setPath : defs.range === 'min' ? f.setMinPath : f.setMaxPath;
+            setVars: function() {
+                isVertical   = defs.orientation === 'vertical';
+                metricType   = isVertical ? 'height' : 'width';
+                coordType    = isVertical ? 'top' : 'left';
+                handleMetric = a.leftEl[ metricType ]() || a.rightEl[ metricType ]();
+            },
+
+            setSetPathHandler: function() {
+                f.setPath = defs.range === true ? f.setPath : defs.range === 'min' ? f.setMinPath : f.setMaxPath;
             },
 
             getTotalWidth: function() {
                 if ( defs.orientation === 'vertical' ) {
-                    return el[ 0 ].offsetHeight - a.handleMetric * ( defs.range === true ? 2 : 1 );
+                    return el[ 0 ].offsetHeight - handleMetric * ( defs.range === true ? 2 : 1 );
                 } else {
-                    return el[ 0 ].offsetWidth - a.handleMetric * ( defs.range === true ? 2 : 1 );
+                    return el[ 0 ].offsetWidth - handleMetric * ( defs.range === true ? 2 : 1 );
                 }
             },
 
@@ -146,6 +146,8 @@
             },
 
             generate: function() {
+                if ( !defs.generate ) { return; }
+
                 var box = $( '<div>' ).addClass( defs.box ).appendTo( el );
                 $( '<div>' ).addClass( defs.left ).addClass( defs.slider ).appendTo( box );
                 $( '<div>' ).addClass( defs.right ).addClass( defs.slider ).appendTo( box );
@@ -253,7 +255,7 @@
             },
 
             setMinPath: function() {
-                a.path[ 0 ].style[ metricType ] = ( ( f.getLeft() + a.handleMetric / 2 ) / f.getTotalWidth() ) * 100 + '%';
+                a.path[ 0 ].style[ metricType ] = ( ( f.getLeft() + handleMetric / 2 ) / f.getTotalWidth() ) * 100 + '%';
             },
 
             leftVal: function( val ) {
@@ -289,6 +291,11 @@
             moveHandler: function() {},
             setCoord: function() {},
             getCoord: function() {},
+
+            init: function() {
+                f.cacheObjects();
+                f.reset();
+            },
 
             cacheObjects: function() {
                 parent = el.parent();
@@ -437,11 +444,11 @@
             },
 
             getX: function() {
-                return el.position().left;
+                return el[ 0 ].offsetLeft - parseInt( el.css( 'marginLeft' ), 10 );
             },
 
             getY: function() {
-                return el.position().top;
+                return el[ 0 ].offsetTop - parseInt( el.css( 'marginTop' ), 10 );
             },
 
             setX: function( x ) {
@@ -469,8 +476,7 @@
             }
         };
 
-        f.cacheObjects();
-        f.reset();
+        f.init();
 
         return {
             el:         el,
