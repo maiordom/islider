@@ -107,11 +107,13 @@ function iSlider( el, props ) {
         rangeFreeRide: function( e ) {
             var coord, width, mouseCoord, sliderLeft, sliderRight, distance, data;
 
+            f.cacheParams();
+
             data        = f.getFreeRideData( e );
             width       = data.width;
             mouseCoord  = data.mouseCoord;
-            sliderLeft  = a.leftSl.getCoord();
-            sliderRight = a.rightSl.getCoord();
+            sliderLeft  = f.getLeft();            
+            sliderRight = f.getRight();
             
             if ( mouseCoord < sliderLeft ) {
                 coord = mouseCoord - handleMetric * 0.5;
@@ -338,10 +340,13 @@ function iSlider( el, props ) {
                 if ( f.isLeftCrossing( x ) ) {
                     x = f.getRight();
                     defs.values[ 0 ] = defs.values[ 1 ];
+                } else {
+                    defs.values[ 0 ] = a.leftSl.getValue( x );
                 }
             } else {
                 defs.values[ 0 ] = a.leftSl.getValue( x );
             }
+
             a.leftSl.setCoord( x );
             f.setPath( x, f.getRight() - x );
         },
@@ -351,10 +356,13 @@ function iSlider( el, props ) {
                 if ( f.isRightCrossing( x ) ) {
                     x = f.getLeft();
                     defs.values[ 1 ] = defs.values[ 0 ];
+                } else {
+                    defs.values[ 1 ] = a.rightSl.getValue( x );
                 }
             } else {
                 defs.values[ 1 ] = a.rightSl.getValue( x );
             }
+            
             a.rightSl.setCoord( x );
             f.setPath( f.getLeft(), x - f.getLeft() );
         },
