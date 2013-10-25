@@ -101,7 +101,7 @@ function Slider( el, props ) {
         },
 
         moveVerticalHandler: function( e ) {
-            var offset = Utils.getEventY( e ) - mouseOffset.y - sliderOffset.top,
+            var offset = Utils.getPageCoords( e ).top - mouseOffset.y - sliderOffset.top,
                 x = offset + tmpCoord;
 
             if ( props.step > 1 ) {
@@ -118,7 +118,7 @@ function Slider( el, props ) {
         },
 
         moveHorizontalHandler: function( e ) {
-            var offset = Utils.getEventX( e ) - mouseOffset.x - sliderOffset.left,
+            var offset = Utils.getPageCoords( e ).left - mouseOffset.x - sliderOffset.left,
                 x = offset + tmpCoord;
 
             if ( props.step > 1 ) {
@@ -162,8 +162,8 @@ function Slider( el, props ) {
             sliderOffset = el.offset();
             tmpCoord     = f.getCoord();
             mouseOffset  = {
-                x: Utils.getEventX( e ) - sliderOffset.left,
-                y: Utils.getEventY( e ) - sliderOffset.top
+                x: Utils.getPageCoords( e ).left - sliderOffset.left,
+                y: Utils.getPageCoords( e ).top - sliderOffset.top
             };
         },
 

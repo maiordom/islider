@@ -46,13 +46,14 @@ function iSlider( el, props ) {
         },
 
         getFreeRideData: function( e ) {
-            var elOffset, mouseLeft, mouseTop, width, mouseCoord;
+            var elOffset, width, mouseCoord;
 
             width      = f.getWidth();
             elOffset   = a.el.offset();
-            mouseLeft  = Utils.getEventX( e ) - elOffset.left;
-            mouseTop   = Utils.getEventY( e ) - elOffset.top;
-            mouseCoord = defs.orientation === 'horizontal' ? mouseLeft : mouseTop;
+            mouseCoord = Utlis.getPageCoords( e );
+            mouseCoord = defs.orientation === 'horizontal' ? 
+                mouseCoord.left - elOffset.left :
+                mouseCoord.top  - elOffset.top;
 
             return {
                 width: width,

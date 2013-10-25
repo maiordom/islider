@@ -3,20 +3,18 @@
 'use strict';
 
 var Utils = {
-    isTouch: 'ontouchstart' in window,   
-    getEventX: function( e ) {
-        if ( this.isTouch ) {
-            return ( e.originalEvent.changedTouches[ 0 ] || e.originalEventtargetTouches[ 0 ] ).pageX;
+    getPageCoords: function( e ) {
+        if ( e.originalEvent.changedTouches || e.originalEventtargetTouches ) {
+            var page = ( e.originalEvent.changedTouches[ 0 ] || e.originalEventtargetTouches[ 0 ] );
+            return {
+                left: page.pageX,
+                top:  page.pageY
+            }
         } else {
-            return e.pageX;
-        }
-    },
-
-    getEventY: function( e ) {
-        if ( this.isTouch ) {
-            return ( e.originalEvent.changedTouches[ 0 ] || e.originalEventtargetTouches[ 0 ] ).pageY;
-        } else {
-            return e.pageY;
+            return {
+                left: e.pageX,
+                top:  e.pageY
+            }
         }
     }
 };

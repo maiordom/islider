@@ -3,20 +3,18 @@
 'use strict';
 
 var Utils = {
-    isTouch: 'ontouchstart' in window,   
-    getEventX: function( e ) {
-        if ( this.isTouch ) {
-            return ( e.originalEvent.changedTouches[ 0 ] || e.originalEventtargetTouches[ 0 ] ).pageX;
+    getPageCoords: function( e ) {
+        if ( e.originalEvent.changedTouches || e.originalEventtargetTouches ) {
+            var page = ( e.originalEvent.changedTouches[ 0 ] || e.originalEventtargetTouches[ 0 ] );
+            return {
+                left: page.pageX,
+                top:  page.pageY
+            }
         } else {
-            return e.pageX;
-        }
-    },
-
-    getEventY: function( e ) {
-        if ( this.isTouch ) {
-            return ( e.originalEvent.changedTouches[ 0 ] || e.originalEventtargetTouches[ 0 ] ).pageY;
-        } else {
-            return e.pageY;
+            return {
+                left: e.pageX,
+                top:  e.pageY
+            }
         }
     }
 };
@@ -90,13 +88,14 @@ function iSlider( el, props ) {
         },
 
         getFreeRideData: function( e ) {
-            var elOffset, mouseLeft, mouseTop, width, mouseCoord;
+            var elOffset, width, mouseCoord;
 
             width      = f.getWidth();
             elOffset   = a.el.offset();
-            mouseLeft  = Utils.getEventX( e ) - elOffset.left;
-            mouseTop   = Utils.getEventY( e ) - elOffset.top;
-            mouseCoord = defs.orientation === 'horizontal' ? mouseLeft : mouseTop;
+            mouseCoord = Utlis.getPageCoords( e );
+            mouseCoord = defs.orientation === 'horizontal' ? 
+                mouseCoord.left - elOffset.left :
+                mouseCoord.top  - elOffset.top;
 
             return {
                 width: width,
@@ -509,7 +508,7 @@ function Slider( el, props ) {
         },
 
         moveVerticalHandler: function( e ) {
-            var offset = Utils.getEventY( e ) - mouseOffset.y - sliderOffset.top,
+            var offset = Utils.getPageCoords( e ).top - mouseOffset.y - sliderOffset.top,
                 x = offset + tmpCoord;
 
             if ( props.step > 1 ) {
@@ -526,7 +525,7 @@ function Slider( el, props ) {
         },
 
         moveHorizontalHandler: function( e ) {
-            var offset = Utils.getEventX( e ) - mouseOffset.x - sliderOffset.left,
+            var offset = Utils.getPageCoords( e ).left - mouseOffset.x - sliderOffset.left,
                 x = offset + tmpCoord;
 
             if ( props.step > 1 ) {
@@ -570,8 +569,8 @@ function Slider( el, props ) {
             sliderOffset = el.offset();
             tmpCoord     = f.getCoord();
             mouseOffset  = {
-                x: Utils.getEventX( e ) - sliderOffset.left,
-                y: Utils.getEventY( e ) - sliderOffset.top
+                x: Utils.getPageCoords( e ).left - sliderOffset.left,
+                y: Utils.getPageCoords( e ).top - sliderOffset.top
             };
         },
 
