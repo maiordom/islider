@@ -92,7 +92,7 @@ function iSlider( el, props ) {
 
             width      = f.getWidth();
             elOffset   = a.el.offset();
-            mouseCoord = Utlis.getPageCoords( e );
+            mouseCoord = Utils.getPageCoords( e );
             mouseCoord = defs.orientation === 'horizontal' ? 
                 mouseCoord.left - elOffset.left :
                 mouseCoord.top  - elOffset.top;
@@ -126,9 +126,15 @@ function iSlider( el, props ) {
                 distance = f.getDistance();
                 if ( sliderLeft + handleMetric < mouseCoord && mouseCoord < sliderLeft + handleMetric + distance / 2 ) {
                     coord = mouseCoord - handleMetric * 0.5;
+                    if ( coord > sliderRight ) {
+                        coord = sliderRight;
+                    }
                     f.onLeftMove( coord );
                 } else {
                     coord = mouseCoord - handleMetric * 1.5;
+                    if ( coord < sliderLeft ) {
+                        coord = sliderLeft;
+                    }
                     f.onRightMove( coord );
                 }
             }
@@ -335,35 +341,36 @@ function iSlider( el, props ) {
         },
 
         leftMoveHandler: function( x ) {
+            var pathWidth = f.getRight() - x;
+            defs.values[ 0 ] = a.leftSl.getValue( x );
+            a.leftSl.setCoord( x );
+            f.setPath( x, pathWidth < 0 ? 0 : pathWidth );
+
             if ( defs.range === true ) {
                 if ( f.isLeftCrossing( x ) ) {
-                    x = f.getRight();
-                    defs.values[ 0 ] = defs.values[ 1 ];
-                } else {
-                    defs.values[ 0 ] = a.leftSl.getValue( x );
-                }
-            } else {
-                defs.values[ 0 ] = a.leftSl.getValue( x );
+                    a.rightSl.setCoord( x );
+                    defs.values[ 1 ] = defs.values[ 0 ];
+                }                
             }
-
-            a.leftSl.setCoord( x );
-            f.setPath( x, f.getRight() - x );
         },
 
         rightMoveHandler: function( x ) {
+            var pathWidth = x - f.getLeft();
+            defs.values[ 1 ] = a.rightSl.getValue( x );
+            a.rightSl.setCoord( x );
+
             if ( defs.range === true ) {
                 if ( f.isRightCrossing( x ) ) {
-                    x = f.getLeft();
-                    defs.values[ 1 ] = defs.values[ 0 ];
+                    a.leftSl.setCoord( x );
+                    defs.values[ 0 ] = defs.values[ 1 ];
+                    f.setPath( x, 0 );
                 } else {
-                    defs.values[ 1 ] = a.rightSl.getValue( x );
+                    f.setPath( f.getLeft(), x - f.getLeft() );
                 }
+
             } else {
-                defs.values[ 1 ] = a.rightSl.getValue( x );
+                f.setPath( f.getLeft(), x - f.getLeft() );
             }
-            
-            a.rightSl.setCoord( x );
-            f.setPath( f.getLeft(), x - f.getLeft() );
         },
 
         setRangePath: function( left, width ) {
