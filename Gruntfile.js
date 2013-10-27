@@ -21,7 +21,7 @@ module.exports = function( grunt ) {
                     ]
                 },
                 files: {
-                    'islider.css': 'src/islider.styl'
+                    'examples/islider.css': 'src/islider.styl'
                 }
             }
         },
@@ -37,7 +37,7 @@ module.exports = function( grunt ) {
                 },
                 files: [{ 
                     src: 'src/islider-box.js',
-                    dest: 'islider.js'
+                    dest: 'examples/islider.js'
                 }]
             }
         }
