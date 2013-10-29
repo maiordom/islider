@@ -158,6 +158,14 @@ function Slider( el, props ) {
             el[ 0 ].style.top = ( parseInt( y, 10 ) / props.getWidth() ) * 100 + '%';
         },
 
+        scaleValToCoord: function( val ) {
+            return scaleValToCoord( val );
+        },
+
+        scaleCoordToVal: function( x ) {
+            return scaleCoordToVal( x );
+        },
+
         setMouseOffset: function( e ) {
             sliderOffset = el.offset();
             tmpCoord     = f.getCoord();
@@ -185,6 +193,8 @@ function Slider( el, props ) {
         setValue:   f.setValue,
         getValue:   f.getValue,
         setCoord:   f.setCoord,
-        getCoord:   f.getCoord
+        getCoord:   f.getCoord,
+        scaleValToCoord: f.scaleValToCoord,
+        scaleCoordToVal: f.scaleCoordToVal
     };
 }

@@ -16,9 +16,9 @@ function iSlider( el, props ) {
             f.extend();
             f.generate();
             f.cacheNodes();
+            f.isVertical();
             f.setVars();
             f.setSetPathHandler();
-            f.isVertical();
             f.setSliders();
             f.isRangeSingle();
             f.setInitialData();
@@ -172,6 +172,10 @@ function iSlider( el, props ) {
             coordType    = isVertical ? 'top' : 'left';
             handleMetric = a.leftEl[ metricType ]() || a.rightEl[ metricType ]();
             width        = f.getWidth( true );
+
+            if ( isVertical ) {
+                a.box.height( width );
+            }
         },
 
         setSetPathHandler: function() {
@@ -183,7 +187,7 @@ function iSlider( el, props ) {
                 return width;
             }
 
-            if ( defs.orientation === 'vertical' ) {
+            if ( isVertical ) {
                 var param = el[ 0 ].offsetHeight;
             } else {
                 var param = el[ 0 ].offsetWidth;
@@ -195,7 +199,6 @@ function iSlider( el, props ) {
         isVertical: function() {
             if ( defs.orientation === 'vertical' ) {
                 el.addClass( 'islider_vertical' );
-                a.box.height( f.getWidth() );
             } else {
                 el.addClass( 'islider_horizontal' );
             }
@@ -345,13 +348,21 @@ function iSlider( el, props ) {
         },
 
         leftVal: function( val ) {
-            a.leftSl.setValue( val );
-            f.leftMoveHandler( a.leftSl.getCoord() );
+            if ( typeof val === 'number' ) {
+                f.cacheParams();
+                f.leftMoveHandler( a.leftSl.scaleValToCoord( val ) );
+            } else {
+                return a.leftSl.getValue();
+            }
         },
 
         rightVal: function( val ) {
-            a.rightSl.setValue( val );
-            f.rightMoveHandler( a.rightSl.getCoord() );
+            if ( typeof val === 'number' ) {
+                f.cacheParams();
+                f.rightMoveHandler( a.rightSl.scaleValToCoord( val ) );
+            } else {
+                return a.rightSl.getValue();
+            }
         },
 
         interface: function() {
