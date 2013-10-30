@@ -9,12 +9,12 @@ var Utils = {
             return {
                 left: page.pageX,
                 top:  page.pageY
-            }
+            };
         } else {
             return {
                 left: e.pageX,
                 top:  e.pageY
-            }
+            };
         }
     }
 };
@@ -68,7 +68,7 @@ function iSlider( el, props ) {
         },
 
         bindEvents: function() {
-            a.el.on( 'click',          f.onElClick    );
+            a.el.on( 'mousedown',      f.onElClick    );
             a.leftSl.on( 'move',       f.onLeftMove   );
             a.leftSl.on( 'stopSlide',  f.onStopSlide  );
             a.rightSl.on( 'move',      f.onRightMove  );
@@ -141,10 +141,8 @@ function iSlider( el, props ) {
         },
 
         minMaxFreeRide: function( e ) {
-            var data, coord;
-
-            data  = f.getFreeRideData( e );
-            coord = data.mouseCoord - handleMetric * 0.5;
+            var data  = f.getFreeRideData( e ),
+                coord = data.mouseCoord - handleMetric * 0.5;
 
             coord = coord < 0 ? 0 : coord > data.width ? data.width : coord;
             f.onLeftMove( coord );
@@ -167,12 +165,11 @@ function iSlider( el, props ) {
         onStartSlide: function( e ) {
             if ( e.target === a.leftSl.el[ 0 ] ) {
                 a.actSl = a.leftSl;
-                a.leftSl.startSlide( e );
             } else if ( e.target === a.rightSl.el[ 0 ] ) {
                 a.actSl = a.rightSl;
-                a.rightSl.startSlide( e );
             }
 
+            a.actSl.startSlide( e );
             a.el.removeClass( defs.hasAnim );
             a.actSl.el.addClass( defs.active );
             f.cacheParams();
@@ -229,11 +226,7 @@ function iSlider( el, props ) {
                 return width;
             }
 
-            if ( isVertical ) {
-                var param = el[ 0 ].offsetHeight;
-            } else {
-                var param = el[ 0 ].offsetWidth;
-            }
+            var param = isVertical ? el[ 0 ].offsetHeight : el[ 0 ].offsetWidth;
 
             return param - handleMetric * ( defs.range === true ? 2 : 1 );
         },
@@ -274,19 +267,15 @@ function iSlider( el, props ) {
         },
 
         setSliders: function() {
-            a.leftSl = Slider( a.leftEl, {
+            var props = {
                 orientation: defs.orientation,
                 domain:      defs.domain,
                 step:        defs.step,
                 getWidth:    f.getWidth
-            });
+            };
 
-            a.rightSl = Slider( a.rightEl, {
-                orientation: defs.orientation,
-                domain:      defs.domain,
-                step:        defs.step,
-                getWidth:    f.getWidth
-            });
+            a.leftSl = Slider( a.leftEl, props );
+            a.rightSl = Slider( a.rightEl, props );
         },
 
         setInitialData: function() {
@@ -353,7 +342,7 @@ function iSlider( el, props ) {
                 if ( f.isLeftCrossing( x ) ) {
                     a.rightSl.setCoord( x );
                     defs.values[ 1 ] = defs.values[ 0 ];
-                }                
+                }
             }
         },
 
@@ -439,9 +428,10 @@ function Slider( el, props ) {
 
         cacheObjects: function() {
             parent = el.parent();
-            f.moveHandler = props.orientation === 'vertical' ? f.moveVerticalHandler : f.moveHorizontalHandler;
-            f.setCoord    = props.orientation === 'vertical' ? f.setY : f.setX;
-            f.getCoord    = props.orientation === 'vertical' ? f.getY : f.getX;
+            var isVertical = props.orientation === 'vertical';
+            f.moveHandler  = isVertical ? f.moveVerticalHandler : f.moveHorizontalHandler;
+            f.setCoord     = isVertical ? f.setY : f.setX;
+            f.getCoord     = isVertical ? f.getY : f.getX;
         },
 
         reset: function() {
@@ -504,11 +494,11 @@ function Slider( el, props ) {
                 'mouseup.slider touchend.slider touchcancel.slider': f.removeDocumentEventHandlers
             });
 
-            document.body.onselectstart = f.returnNull;
-            document.ondragstart = f.returnNull;
+            document.body.onselectstart = f.returnFalse;
+            document.ondragstart = f.returnFalse;
         },
 
-        returnNull: function() {
+        returnFalse: function() {
             return false;
         },
 
@@ -525,9 +515,8 @@ function Slider( el, props ) {
             return scaleValToCoord( alignValue );
         },
 
-        moveVerticalHandler: function( e ) {
-            var offset = Utils.getPageCoords( e ).top - mouseOffset.y - sliderOffset.top,
-                x = offset + tmpCoord;
+        getPosision: function( offset ) {
+            var x = offset + tmpCoord;
 
             if ( props.step > 1 ) {
                 x = f.trimMouseValue( x );
@@ -539,24 +528,17 @@ function Slider( el, props ) {
                 x = xMax;
             }
 
-            f.trigger( 'move', [ x ] );
+            return x;
+        },
+
+        moveVerticalHandler: function( e ) {
+            var offset = Utils.getPageCoords( e ).top - mouseOffset.y - sliderOffset.top;
+            f.trigger( 'move', [ f.getPosision( offset ) ] );
         },
 
         moveHorizontalHandler: function( e ) {
-            var offset = Utils.getPageCoords( e ).left - mouseOffset.x - sliderOffset.left,
-                x = offset + tmpCoord;
-
-            if ( props.step > 1 ) {
-                x = f.trimMouseValue( x );
-            }
-
-            if ( xMin > x ) {
-                x = xMin;
-            } else if ( x > xMax ) {
-                x = xMax;
-            }
-
-            f.trigger( 'move', [ x ] );
+            var offset = Utils.getPageCoords( e ).left - mouseOffset.x - sliderOffset.left;
+            f.trigger( 'move', [ f.getPosision( offset ) ] );
         },
 
         setValue: function( val ) {
@@ -583,14 +565,6 @@ function Slider( el, props ) {
             el[ 0 ].style.top = ( parseInt( y, 10 ) / props.getWidth() ) * 100 + '%';
         },
 
-        scaleValToCoord: function( val ) {
-            return scaleValToCoord( val );
-        },
-
-        scaleCoordToVal: function( x ) {
-            return scaleCoordToVal( x );
-        },
-
         setMouseOffset: function( e ) {
             sliderOffset = el.offset();
             tmpCoord     = f.getCoord();
@@ -605,6 +579,14 @@ function Slider( el, props ) {
             document.ondragstart = null;
             $( document.body ).off( 'mousemove.slider mouseup.slider touchmove.slider' );
             f.trigger( 'stopSlide' );
+        },
+
+        scaleValToCoord: function( val ) {
+            return scaleValToCoord( val );
+        },
+
+        scaleCoordToVal: function( x ) {
+            return scaleCoordToVal( x );
         }
     };
 

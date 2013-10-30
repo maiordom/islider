@@ -9,12 +9,12 @@ var Utils = {
             return {
                 left: page.pageX,
                 top:  page.pageY
-            }
+            };
         } else {
             return {
                 left: e.pageX,
                 top:  e.pageY
-            }
+            };
         }
     }
 };

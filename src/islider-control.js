@@ -26,7 +26,7 @@ function iSlider( el, props ) {
         },
 
         bindEvents: function() {
-            a.el.on( 'click',          f.onElClick    );
+            a.el.on( 'mousedown',      f.onElClick    );
             a.leftSl.on( 'move',       f.onLeftMove   );
             a.leftSl.on( 'stopSlide',  f.onStopSlide  );
             a.rightSl.on( 'move',      f.onRightMove  );
@@ -99,10 +99,8 @@ function iSlider( el, props ) {
         },
 
         minMaxFreeRide: function( e ) {
-            var data, coord;
-
-            data  = f.getFreeRideData( e );
-            coord = data.mouseCoord - handleMetric * 0.5;
+            var data  = f.getFreeRideData( e ),
+                coord = data.mouseCoord - handleMetric * 0.5;
 
             coord = coord < 0 ? 0 : coord > data.width ? data.width : coord;
             f.onLeftMove( coord );
@@ -125,12 +123,11 @@ function iSlider( el, props ) {
         onStartSlide: function( e ) {
             if ( e.target === a.leftSl.el[ 0 ] ) {
                 a.actSl = a.leftSl;
-                a.leftSl.startSlide( e );
             } else if ( e.target === a.rightSl.el[ 0 ] ) {
                 a.actSl = a.rightSl;
-                a.rightSl.startSlide( e );
             }
 
+            a.actSl.startSlide( e );
             a.el.removeClass( defs.hasAnim );
             a.actSl.el.addClass( defs.active );
             f.cacheParams();
@@ -187,11 +184,7 @@ function iSlider( el, props ) {
                 return width;
             }
 
-            if ( isVertical ) {
-                var param = el[ 0 ].offsetHeight;
-            } else {
-                var param = el[ 0 ].offsetWidth;
-            }
+            var param = isVertical ? el[ 0 ].offsetHeight : el[ 0 ].offsetWidth;
 
             return param - handleMetric * ( defs.range === true ? 2 : 1 );
         },
@@ -232,19 +225,15 @@ function iSlider( el, props ) {
         },
 
         setSliders: function() {
-            a.leftSl = Slider( a.leftEl, {
+            var props = {
                 orientation: defs.orientation,
                 domain:      defs.domain,
                 step:        defs.step,
                 getWidth:    f.getWidth
-            });
+            };
 
-            a.rightSl = Slider( a.rightEl, {
-                orientation: defs.orientation,
-                domain:      defs.domain,
-                step:        defs.step,
-                getWidth:    f.getWidth
-            });
+            a.leftSl = Slider( a.leftEl, props );
+            a.rightSl = Slider( a.rightEl, props );
         },
 
         setInitialData: function() {
@@ -311,7 +300,7 @@ function iSlider( el, props ) {
                 if ( f.isLeftCrossing( x ) ) {
                     a.rightSl.setCoord( x );
                     defs.values[ 1 ] = defs.values[ 0 ];
-                }                
+                }
             }
         },
 
