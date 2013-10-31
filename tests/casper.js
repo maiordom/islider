@@ -1,9 +1,11 @@
+'use strict';
+
 var casper = require( 'casper' ).create(),
     url = 'examples/index.html';
 
 casper.options.viewportSize = { width: 1024, height: 768 };
 
-casper.test.begin( 'Islider', 4, function( test ) {
+casper.test.begin( 'Islider', 5, function( test ) {
 
     casper.start( url );
 
@@ -11,6 +13,7 @@ casper.test.begin( 'Islider', 4, function( test ) {
     test2( test );
     test3( test );
     test4( test );
+    test5( test );
 
     casper.then( function() {
         test.done();
@@ -136,5 +139,20 @@ function test4( test ) {
         });
 
         test.assert( posLeft === posRight, 'move right handler to max left position' );
+    });
+}
+
+function test5( test ) {
+    casper.then( function() {
+        var data = this.evaluate( function() {
+            var api = $( '.islider' ).eq( 1 ).data().islider;
+
+            return {
+                leftVal: api.leftVal(),
+                rightVal: api.rightVal()
+            };
+        });
+
+        test.assertEquals( data.leftVal, data.rightVal, 'compare equals value left and right handler' );
     });
 }
