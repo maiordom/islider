@@ -1,5 +1,5 @@
 function iSlider( el, props ) {
-    var a, f, defs = {}, event = {}, width, metricType, coordType, isVertical = false, handleMetric;
+    var a, f, defs = {}, event = {}, width, metricType, coordType, isVertical = false, handleMetric, isCrossing = false;
 
     f = {
         on: function( eventName, callback ) {
@@ -298,8 +298,13 @@ function iSlider( el, props ) {
 
             if ( defs.range === true ) {
                 if ( f.isLeftCrossing( x ) ) {
+                    isCrossing = true;
                     a.rightSl.setCoord( x );
                     defs.values[ 1 ] = defs.values[ 0 ];
+                } else if ( isCrossing ) {
+                    isCrossing = false;
+                    a.rightSl.setCoord( a.rightSl.pos );
+                    defs.values[ 1 ] = a.rightSl.getValue();
                 }
             }
         },
@@ -311,11 +316,16 @@ function iSlider( el, props ) {
 
             if ( defs.range === true ) {
                 if ( f.isRightCrossing( x ) ) {
+                    isCrossing = true;
                     a.leftSl.setCoord( x );
                     defs.values[ 0 ] = defs.values[ 1 ];
                     f.setPath( x, 0 );
                 } else {
                     f.setPath( f.getLeft(), x - f.getLeft() );
+                    if ( isCrossing ) {
+                        a.leftSl.setCoord( a.leftSl.pos );
+                        defs.values[ 0 ] = a.leftSl.getValue();
+                    }
                 }
 
             } else {
