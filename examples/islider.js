@@ -41,7 +41,7 @@ var Defaults = {
 };
 
 function iSlider( el, props ) {
-    var a, f, defs = {}, event = {}, width, metricType, coordType, isVertical = false, handleMetric;
+    var a, f, defs = {}, event = {}, width, metricType, coordType, isVertical = false, handleMetric, isCrossing = false;
 
     f = {
         on: function( eventName, callback ) {
@@ -104,7 +104,7 @@ function iSlider( el, props ) {
         },
 
         rangeFreeRide: function( e ) {
-            var coord, width, mouseCoord, sliderLeft, sliderRight, distance, data;
+            var hasMoved = false, coord, width, mouseCoord, sliderLeft, sliderRight, distance, data;
 
             f.cacheParams();
 
@@ -118,10 +118,12 @@ function iSlider( el, props ) {
                 coord = mouseCoord - handleMetric * 0.5;
                 coord = coord < 0 ? 0 : coord;
                 f.onLeftMove( coord );
+                hasMoved = true;
             } else if ( mouseCoord > sliderRight + handleMetric ) {
                 coord = mouseCoord - handleMetric * 1.5;
                 coord = coord > width ? width : coord;
                 f.onRightMove( coord );
+                hasMoved = true;
             } else {
                 distance = f.getDistance();
                 if ( sliderLeft + handleMetric < mouseCoord && mouseCoord < sliderLeft + handleMetric + distance / 2 ) {
@@ -130,13 +132,19 @@ function iSlider( el, props ) {
                         coord = sliderRight;
                     }
                     f.onLeftMove( coord );
+                    hasMoved = true;
                 } else {
                     coord = mouseCoord - handleMetric * 1.5;
                     if ( coord < sliderLeft ) {
                         coord = sliderLeft;
                     }
                     f.onRightMove( coord );
+                    hasMoved = true;
                 }
+            }
+
+            if ( hasMoved ) {
+                f.triggerStopSlide();
             }
         },
 
@@ -146,6 +154,7 @@ function iSlider( el, props ) {
 
             coord = coord < 0 ? 0 : coord > data.width ? data.width : coord;
             f.onLeftMove( coord );
+            f.triggerStopSlide();
         },
 
         onHoverEl: function() {
@@ -159,7 +168,7 @@ function iSlider( el, props ) {
         onStopSlide: function() {
             a.el.addClass( defs.hasAnim );
             a.actSl.el.removeClass( defs.active );
-            el.trigger( 'islider.stop-slide' );
+            f.triggerStopSlide();
         },
 
         onStartSlide: function( e ) {
@@ -175,6 +184,10 @@ function iSlider( el, props ) {
             f.cacheParams();
 
             return false;
+        },
+
+        triggerStopSlide: function() {
+            el.trigger( 'islider.stop-slide' );
         },
 
         extend: function() {
@@ -340,24 +353,33 @@ function iSlider( el, props ) {
 
             if ( defs.range === true ) {
                 if ( f.isLeftCrossing( x ) ) {
+                    isCrossing = true;
                     a.rightSl.setCoord( x );
                     defs.values[ 1 ] = defs.values[ 0 ];
+                } else if ( isCrossing ) {
+                    isCrossing = false;
+                    a.rightSl.setCoord( a.rightSl.pos );
+                    defs.values[ 1 ] = a.rightSl.getValue();
                 }
             }
         },
 
         rightMoveHandler: function( x ) {
-            var pathWidth = x - f.getLeft();
             defs.values[ 1 ] = a.rightSl.getValue( x );
             a.rightSl.setCoord( x );
 
             if ( defs.range === true ) {
                 if ( f.isRightCrossing( x ) ) {
+                    isCrossing = true;
                     a.leftSl.setCoord( x );
                     defs.values[ 0 ] = defs.values[ 1 ];
                     f.setPath( x, 0 );
                 } else {
                     f.setPath( f.getLeft(), x - f.getLeft() );
+                    if ( isCrossing ) {
+                        a.leftSl.setCoord( a.leftSl.pos );
+                        defs.values[ 0 ] = a.leftSl.getValue();
+                    }
                 }
 
             } else {
