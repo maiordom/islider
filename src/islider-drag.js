@@ -5,7 +5,16 @@ function Slider( el, props ) {
     f = {
         moveHandler: function() {},
         setCoord: function() {},
-        getCoord: function() {},
+
+        getCoord: function( getCoord ) {
+            if ( props.step > 1 ) {
+                return function() {
+                    return f.trimMouseValue( getCoord() );
+                }
+            }
+
+            return getCoord;
+        },
 
         init: function() {
             f.cacheObjects();
@@ -17,7 +26,7 @@ function Slider( el, props ) {
             var isVertical = props.orientation === 'vertical';
             f.moveHandler  = isVertical ? f.moveVerticalHandler : f.moveHorizontalHandler;
             f.setCoord     = isVertical ? f.setY : f.setX;
-            f.getCoord     = isVertical ? f.getY : f.getX;
+            f.getCoord     = f.getCoord( isVertical ? f.getY : f.getX );
         },
 
         reset: function() {
