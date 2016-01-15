@@ -1,16 +1,25 @@
-function Slider( el, props ) {
-    var events = {}, f, range, xMin, xMax, scaleValToCoord, scaleCoordToVal,
-        sliderOffset, tmpCoord, mouseOffset, parent;
+/* global Utils:true */
+function Slider(el, props) { //eslint-disable-line
+    var events = {};
+    var f;
+    var range;
+    var xMin;
+    var xMax;
+    var scaleValToCoord;
+    var scaleCoordToVal;
+    var sliderOffset;
+    var tmpCoord;
+    var mouseOffset;
 
     f = {
         moveHandler: function() {},
         setCoord: function() {},
 
-        getCoord: function( getCoord ) {
-            if ( props.step > 1 ) {
+        getCoord: function(getCoord) {
+            if (props.step > 1) {
                 return function() {
-                    return f.trimMouseValue( getCoord() );
-                }
+                    return f.trimMouseValue(getCoord());
+                };
             }
 
             return getCoord;
@@ -22,69 +31,70 @@ function Slider( el, props ) {
         },
 
         cacheObjects: function() {
-            parent = el.parent();
             var isVertical = props.orientation === 'vertical';
-            f.moveHandler  = isVertical ? f.moveVerticalHandler : f.moveHorizontalHandler;
-            f.setCoord     = isVertical ? f.setY : f.setX;
-            f.getCoord     = f.getCoord( isVertical ? f.getY : f.getX );
+            f.moveHandler = isVertical ? f.moveVerticalHandler : f.moveHorizontalHandler;
+            f.setCoord = isVertical ? f.setY : f.setX;
+            f.getCoord = f.getCoord(isVertical ? f.getY : f.getX);
         },
 
         reset: function() {
-            range = [ 0, props.getWidth() ];
-            f.setRange( range );
-            f.setScale( range, props.domain );
+            range = [0, props.getWidth()];
+            f.setRange(range);
+            f.setScale(range, props.domain);
         },
 
-        setRange: function( range ) {
-            xMin = range[ 0 ];
-            xMax = range[ 1 ];
+        setRange: function(range) {
+            xMin = range[0];
+            xMax = range[1];
         },
 
-        setScale: function( range, domain ) {
-            scaleValToCoord = f.scale( domain, range );
-            scaleCoordToVal = f.scale( range, domain );
+        setScale: function(range, domain) {
+            scaleValToCoord = f.scale(domain, range);
+            scaleCoordToVal = f.scale(range, domain);
         },
 
-        on: function( eventName, callback ) {
-            events[ eventName ] = callback;
+        on: function(eventName, callback) {
+            events[eventName] = callback;
         },
 
-        trigger: function( eventName, data ) {
-            if ( events[ eventName ] ) { events[ eventName ].apply( null, data ); }
+        trigger: function(eventName, data) {
+            if (events[eventName]) {
+                events[eventName].apply(null, data);
+            }
         },
 
-        startSlide: function( e ) {
+        startSlide: function(e) {
             f.reset();
-            f.setMouseOffset( e );
+            f.setMouseOffset(e);
             f.addDocumentEventHandlers();
-            f.trigger( 'startSlide' );
+            f.trigger('startSlide');
         },
 
-        scale: function( domain, range ) {
-            var u = f.uninterpolateNumber( domain[ 0 ], domain[ 1 ] ),
-                i = f.interpolateNumber( range[ 0 ], range[ 1 ] );
+        scale: function(domain, range) {
+            var u = f.uninterpolateNumber(domain[0], domain[1]);
+            var i = f.interpolateNumber(range[0], range[1]);
 
-            return function( x ) {
-                return i( u( x ) );
+            return function(x) {
+                return i(u(x));
             };
         },
 
-        uninterpolateNumber: function( a, b ) {
-            b = b - ( a = + a ) ? 1 / ( b - a ) : 0;
-            return function( x ) {
-                return ( x - a ) * b;
+        uninterpolateNumber: function(a, b) {
+            b = b - (a = +a) ? 1 / (b - a) : 0;
+            return function(x) {
+                return (x - a) * b;
             };
         },
 
-        interpolateNumber: function( a, b ) {
+        interpolateNumber: function(a, b) {
             b -= a;
-            return function( t ) {
+            return function(t) {
                 return a + b * t;
             };
         },
 
         addDocumentEventHandlers: function() {
-            $( document.body ).on({
+            $(document.body).on({
                 'mousemove.slider touchmove.slider': f.moveHandler,
                 'mouseup.slider touchend.slider touchcancel.slider': f.removeDocumentEventHandlers
             });
@@ -97,105 +107,105 @@ function Slider( el, props ) {
             return false;
         },
 
-        trimMouseValue: function( x ) {
-            var val        = scaleCoordToVal( x ),
-                step       = ( props.step > 0 ) ? props.step : 1,
-                valModStep = ( val - range[ 0 ] ) % step,
-                alignValue = val - valModStep;
+        trimMouseValue: function(x) {
+            var val = scaleCoordToVal(x);
+            var step = (props.step > 0) ? props.step : 1;
+            var valModStep = (val - range[0]) % step;
+            var alignValue = val - valModStep;
 
-            if ( Math.abs( valModStep ) * 2 >= step ) {
-                alignValue += ( valModStep > 0 ) ? step : ( - step );
+            if (Math.abs(valModStep) * 2 >= step) {
+                alignValue += (valModStep > 0) ? step : (-step);
             }
 
-            return scaleValToCoord( alignValue );
+            return scaleValToCoord(alignValue);
         },
 
-        getPosision: function( offset ) {
+        getPosision: function(offset) {
             var x = offset + tmpCoord;
 
-            if ( props.step > 1 ) {
-                x = f.trimMouseValue( x );
+            if (props.step > 1) {
+                x = f.trimMouseValue(x);
             }
 
-            if ( xMin > x ) {
+            if (xMin > x) {
                 x = xMin;
-            } else if ( x > xMax ) {
+            } else if (x > xMax) {
                 x = xMax;
             }
 
             return x;
         },
 
-        moveVerticalHandler: function( e ) {
-            var offset = Utils.getPageCoords( e ).top - mouseOffset.y - sliderOffset.top;
-            f.trigger( 'move', [ f.getPosision( offset ) ] );
+        moveVerticalHandler: function(e) {
+            var offset = Utils.getPageCoords(e).top - mouseOffset.y - sliderOffset.top;
+            f.trigger('move', [f.getPosision(offset)]);
         },
 
-        moveHorizontalHandler: function( e ) {
-            var offset = Utils.getPageCoords( e ).left - mouseOffset.x - sliderOffset.left;
-            f.trigger( 'move', [ f.getPosision( offset ) ] );
+        moveHorizontalHandler: function(e) {
+            var offset = Utils.getPageCoords(e).left - mouseOffset.x - sliderOffset.left;
+            f.trigger('move', [f.getPosision(offset)]);
         },
 
-        setValue: function( val ) {
-            f.setCoord( scaleValToCoord( val ) );
+        setValue: function(val) {
+            f.setCoord(scaleValToCoord(val));
         },
 
-        getValue: function( x ) {
-            return scaleCoordToVal( typeof x === 'number' ? x : f.getCoord() );
+        getValue: function(x) {
+            return scaleCoordToVal(typeof x === 'number' ? x : f.getCoord());
         },
 
         getX: function() {
-            return el[ 0 ].offsetLeft - parseInt( el.css( 'marginLeft' ), 10 );
+            return el[0].offsetLeft - parseInt(el.css('marginLeft'), 10);
         },
 
         getY: function() {
-            return el[ 0 ].offsetTop - parseInt( el.css( 'marginTop' ), 10 );
+            return el[0].offsetTop - parseInt(el.css('marginTop'), 10);
         },
 
-        setX: function( x ) {
-            el[ 0 ].style.left = ( parseInt( x, 10 ) / props.getWidth() ) * 100 + '%';
+        setX: function(x) {
+            el[0].style.left = (parseInt(x, 10) / props.getWidth()) * 100 + '%';
         },
 
-        setY: function( y ) {
-            el[ 0 ].style.top = ( parseInt( y, 10 ) / props.getWidth() ) * 100 + '%';
+        setY: function(y) {
+            el[0].style.top = (parseInt(y, 10) / props.getWidth()) * 100 + '%';
         },
 
-        setMouseOffset: function( e ) {
+        setMouseOffset: function(e) {
             sliderOffset = el.offset();
-            tmpCoord     = f.getCoord();
-            mouseOffset  = {
-                x: Utils.getPageCoords( e ).left - sliderOffset.left,
-                y: Utils.getPageCoords( e ).top - sliderOffset.top
+            tmpCoord = f.getCoord();
+            mouseOffset = {
+                x: Utils.getPageCoords(e).left - sliderOffset.left,
+                y: Utils.getPageCoords(e).top - sliderOffset.top
             };
         },
 
         removeDocumentEventHandlers: function() {
             document.body.onselectstart = null;
             document.ondragstart = null;
-            $( document.body ).off( 'mousemove.slider mouseup.slider touchmove.slider' );
-            f.trigger( 'stopSlide' );
+            $(document.body).off('mousemove.slider mouseup.slider touchmove.slider');
+            f.trigger('stopSlide');
         },
 
-        scaleValToCoord: function( val ) {
-            return scaleValToCoord( val );
+        scaleValToCoord: function(val) {
+            return scaleValToCoord(val);
         },
 
-        scaleCoordToVal: function( x ) {
-            return scaleCoordToVal( x );
+        scaleCoordToVal: function(x) {
+            return scaleCoordToVal(x);
         }
     };
 
     f.init();
 
-    return {        
-        el:         el,
-        pos:        null,
-        on:         f.on,
+    return {
+        el: el,
+        pos: null,
+        on: f.on,
         startSlide: f.startSlide,
-        setValue:   f.setValue,
-        getValue:   f.getValue,
-        setCoord:   f.setCoord,
-        getCoord:   f.getCoord,
+        setValue: f.setValue,
+        getValue: f.getValue,
+        setCoord: f.setCoord,
+        getCoord: f.getCoord,
         scaleValToCoord: f.scaleValToCoord,
         scaleCoordToVal: f.scaleCoordToVal
     };
