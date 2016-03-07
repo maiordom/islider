@@ -74,10 +74,6 @@ gulp.task('min-css', () => {
         .pipe(gulp.dest(config.dist));
 });
 
-gulp.task('build', () => {
-    return runSequence('min-js', 'min-css');
-});
-
 gulp.task('watch', () => {
     watch(`${config.jsPath}/*.js`, () => {
         runSequence('js');
@@ -88,4 +84,5 @@ gulp.task('watch', () => {
     });
 });
 
+gulp.task('build', ['min-js', 'min-css']);
 gulp.task('default', ['server', 'watch', 'js', 'stylus']);

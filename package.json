@@ -16,6 +16,7 @@
     "gulp": "^3.9.0",
     "gulp-autoprefixer": "^3.1.0",
     "gulp-babel": "^6.0.0",
+    "gulp-concat": "^2.6.0",
     "gulp-connect": "^2.2.0",
     "gulp-cssnano": "^2.1.0",
     "gulp-rename": "^1.2.2",
@@ -37,6 +38,7 @@
   },
   "homepage": "https://github.com/maiordom/islider",
   "license": "MIT",
+  "name": "islider",
   "pre-commit": [
     "lint",
     "test"
@@ -46,15 +48,13 @@
     "url": "https://github.com/maiordom/islider.git"
   },
   "scripts": {
+    "build": "node_modules/.bin/gulp build",
     "lint": "node pre-commit.js",
+    "postinstall": "rm -f .jshintignore .jshintrc && npm run selenium_install",
     "selenium_install": "node_modules/.bin/selenium-standalone install",
     "selenium_start": "node_modules/.bin/selenium-standalone start",
     "test": "node_modules/.bin/mocha --timeout 60000 --slow 30000 test/webdriver.js",
     "validate": "npm ls"
   },
-  "version": "0.1.0",
-  "dependencies": {
-    "gulp-concat": "^2.6.0",
-    "shelljs": "^0.5.3"
-  }
+  "version": "0.1.0"
 }
