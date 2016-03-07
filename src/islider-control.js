@@ -1,415 +1,423 @@
-/* global Slider:true Utils:true Defaults:true */
-function iSlider(el, props) { //eslint-disable-line
-    var a;
-    var f;
-    var defs = {};
-    var event = {};
-    var width;
-    var metricType;
-    var coordType;
-    var isVertical = false;
-    var isCrossing = false;
-    var handleMetric;
+/* global IsliderDrag:true Utils:true Defaults:true */
+function IsliderControl(element, properties) {
+    this.element = element;
+    this.properties = properties || {};
+    this.freeRide = function() {};
+    this.setPath = function() {};
+    this.options = {};
+    this.events = {};
+    this.path = null;
+    this.box = null;
+    this.slider = null;
+    this.leftElement = null;
+    this.rightElement = null;
+    this.elementWidth = null;
+    this.handleMetric = null;
+    this.metricType = null;
+    this.coordType = null;
+    this.interface = null;
+    this.leftSlider = null;
+    this.rightSlider = null;
+    this.activeSlider = null;
+    this.isVertical = false;
+    this.isCrossing = false;
 
-    f = {
-        on: function(eventName, callback) {
-            event[eventName] = callback;
-            return f.interface;
-        },
-
-        trigger: function(eventName, data) {
-            if (event[eventName]) {
-                event[eventName].apply(null, data);
-            }
-        },
-
-        init: function() {
-            f.interface = f.interface();
-            f.extend();
-            f.generate();
-            f.cacheNodes();
-            f.isVertical();
-            f.setVars();
-            f.setSetPathHandler();
-            f.setSliders();
-            f.isRangeSingle();
-            f.setInitialData();
-            f.bindEvents();
-        },
-
-        bindEvents: function() {
-            a.el.on('mousedown', f.onElClick);
-            a.leftSl.on('move', f.onLeftMove);
-            a.leftSl.on('stopSlide', f.onStopSlide);
-            a.rightSl.on('move', f.onRightMove);
-            a.rightSl.on('stopSlide', f.onStopSlide);
-            a.slider.on('mousedown', f.onStartSlide);
-            a.slider.on('touchstart', f.onStartSlide);
-            a.slider.on('mouseenter', f.onHoverEl);
-            a.slider.on('mouseleave', f.onUnhoverEl);
-        },
-
-        onElClick: function(e) {
-            if ($(e.target).hasClass(defs.slider)) {
-                return;
-            }
-
-            f.freeRide(e);
-        },
-
-        getFreeRideData: function(e) {
-            var elOffset;
-            var width;
-            var mouseCoord;
-
-            width = f.getWidth();
-            elOffset = a.el.offset();
-            mouseCoord = Utils.getPageCoords(e);
-            mouseCoord = defs.orientation === 'horizontal'
-                ? mouseCoord.left - elOffset.left
-                : mouseCoord.top - elOffset.top;
-
-            return {
-                width: width,
-                mouseCoord: mouseCoord
-            };
-        },
-
-        rangeFreeRide: function(e) {
-            var hasMoved = false;
-            var coord;
-            var width;
-            var mouseCoord;
-            var sliderLeft;
-            var sliderRight;
-            var distance;
-            var data;
-
-            f.cacheParams();
-
-            data = f.getFreeRideData(e);
-            width = data.width;
-            mouseCoord = data.mouseCoord;
-            sliderLeft = f.getLeft();
-            sliderRight = f.getRight();
-
-            if (mouseCoord < sliderLeft) {
-                coord = mouseCoord - handleMetric * 0.5;
-                coord = coord < 0 ? 0 : coord;
-                f.onLeftMove(coord);
-                hasMoved = true;
-            } else if (mouseCoord > sliderRight + handleMetric) {
-                coord = mouseCoord - handleMetric * 1.5;
-                coord = coord > width ? width : coord;
-                f.onRightMove(coord);
-                hasMoved = true;
-            } else {
-                distance = f.getDistance();
-                if (sliderLeft + handleMetric < mouseCoord && mouseCoord < sliderLeft + handleMetric + distance / 2) {
-                    coord = mouseCoord - handleMetric * 0.5;
-                    if (coord > sliderRight) {
-                        coord = sliderRight;
-                    }
-                    f.onLeftMove(coord);
-                    hasMoved = true;
-                } else {
-                    coord = mouseCoord - handleMetric * 1.5;
-                    if (coord < sliderLeft) {
-                        coord = sliderLeft;
-                    }
-                    f.onRightMove(coord);
-                    hasMoved = true;
-                }
-            }
-
-            if (hasMoved) {
-                f.triggerStopSlide();
-            }
-        },
-
-        minMaxFreeRide: function(e) {
-            var data = f.getFreeRideData(e);
-            var coord = data.mouseCoord - handleMetric * 0.5;
-
-            coord = coord < 0 ? 0 : coord > data.width ? data.width : coord;
-            f.onLeftMove(coord);
-            f.triggerStopSlide();
-        },
-
-        onHoverEl: function() {
-            $(this).addClass(defs.hover);
-        },
-
-        onUnhoverEl: function() {
-            $(this).removeClass(defs.hover);
-        },
-
-        onStopSlide: function() {
-            a.el.addClass(defs.hasAnim);
-            a.actSl.el.removeClass(defs.active);
-            f.triggerStopSlide();
-        },
-
-        onStartSlide: function(e) {
-            if (e.target === a.leftSl.el[0]) {
-                a.actSl = a.leftSl;
-            } else if (e.target === a.rightSl.el[0]) {
-                a.actSl = a.rightSl;
-            }
-
-            a.actSl.startSlide(e);
-            a.el.removeClass(defs.hasAnim);
-            a.actSl.el.addClass(defs.active);
-            f.cacheParams();
-
-            return false;
-        },
-
-        triggerStopSlide: function() {
-            el.trigger('islider.stop-slide');
-        },
-
-        extend: function() {
-            $.extend(true, defs, Defaults, props);
-        },
-
-        cacheParams: function() {
-            a.leftSl.pos = f.getLeft(true);
-            a.rightSl.pos = f.getRight(true);
-            width = f.getWidth(true);
-        },
-
-        cacheNodes: function() {
-            el.addClass(defs.islider);
-
-            a = {
-                actSl: null,
-                el: el,
-                slider: el.find('.' + defs.slider),
-                leftEl: el.find('.' + defs.left),
-                rightEl: el.find('.' + defs.right),
-                path: el.find('.' + defs.path),
-                box: el.find('.' + defs.box)
-            };
-
-            setTimeout(function() {
-                el.addClass(defs.hasAnim);
-            }, 10);
-        },
-
-        setVars: function() {
-            isVertical = defs.orientation === 'vertical';
-            metricType = isVertical ? 'height' : 'width';
-            coordType = isVertical ? 'top' : 'left';
-            handleMetric = a.leftEl[metricType]() || a.rightEl[metricType]();
-            width = f.getWidth(true);
-
-            if (isVertical) {
-                a.box.height(width);
-            }
-        },
-
-        setSetPathHandler: function() {
-            f.setPath = defs.range === true ? f.setRangePath : defs.range === 'min' ? f.setMinPath : f.setMaxPath;
-        },
-
-        getWidth: function(readEl) {
-            if (!readEl) {
-                return width;
-            }
-
-            var param = isVertical ? el[0].offsetHeight : el[0].offsetWidth;
-
-            return param - handleMetric * (defs.range === true ? 2 : 1);
-        },
-
-        isVertical: function() {
-            if (defs.orientation === 'vertical') {
-                el.addClass('islider_vertical');
-            } else {
-                el.addClass('islider_horizontal');
-            }
-        },
-
-        isRangeSingle: function() {
-            if (defs.range === 'min') {
-                defs.values[1] = defs.value;
-                el.addClass('islider_min');
-                f.freeRide = f.minMaxFreeRide;
-            } else if (defs.range === 'max') {
-                el.addClass('islider_max');
-                var hook = defs.orientation === 'horizontal' ? 'right' : 'bottom';
-                a.path[0].style[hook] = 0;
-                defs.values[0] = defs.value;
-                defs.values[1] = defs.domain[1];
-                f.freeRide = f.minMaxFreeRide;
-            } else {
-                el.addClass('islider_range');
-                f.freeRide = f.rangeFreeRide;
-            }
-        },
-
-        generate: function() {
-            if (!defs.generate) {
-                return;
-            }
-
-            var box = $('<div>').addClass(defs.box).appendTo(el);
-            $('<div>').addClass(defs.left).addClass(defs.slider).appendTo(box);
-            $('<div>').addClass(defs.right).addClass(defs.slider).appendTo(box);
-            $('<div>').addClass(defs.path).appendTo(box);
-        },
-
-        setSliders: function() {
-            var props = {
-                orientation: defs.orientation,
-                domain: defs.domain,
-                step: defs.step,
-                getWidth: f.getWidth
-            };
-
-            a.leftSl = Slider(a.leftEl, props);
-            a.rightSl = Slider(a.rightEl, props);
-        },
-
-        setInitialData: function() {
-            if (defs.range === true) {
-                a.leftSl.setValue(defs.values[0]);
-                a.rightSl.setValue(defs.values[1]);
-            } else {
-                a.leftSl.setValue(defs.value);
-            }
-
-            f.cacheParams();
-            f.setPath(f.getLeft(), f.getDistance());
-
-            if (defs.range !== true) {
-                a.rightEl.hide();
-            }
-        },
-
-        getLeft: function(readEl) {
-            if (readEl) {
-                return a.leftSl.getCoord();
-            } else {
-                return a.leftSl.pos;
-            }
-        },
-
-        getRight: function(readEl) {
-            if (readEl) {
-                return a.rightSl.getCoord();
-            } else {
-                return a.rightSl.pos;
-            }
-        },
-
-        getDistance: function() {
-            return f.getRight() - f.getLeft();
-        },
-
-        isLeftCrossing: function(x) {
-            return x >= f.getRight();
-        },
-
-        isRightCrossing: function(x) {
-            return x <= f.getLeft();
-        },
-
-        onLeftMove: function(x) {
-            f.leftMoveHandler(x);
-            defs.onSlide(defs.values[0], defs.values, 'left');
-        },
-
-        onRightMove: function(x) {
-            f.rightMoveHandler(x);
-            defs.onSlide(defs.values[1], defs.values, 'right');
-        },
-
-        leftMoveHandler: function(x) {
-            var pathWidth = f.getRight() - x;
-            defs.values[0] = a.leftSl.getValue(x);
-            a.leftSl.setCoord(x);
-            f.setPath(x, pathWidth < 0 ? 0 : pathWidth);
-
-            if (defs.range === true) {
-                if (f.isLeftCrossing(x)) {
-                    isCrossing = true;
-                    a.rightSl.setCoord(x);
-                    defs.values[1] = defs.values[0];
-                } else if (isCrossing) {
-                    isCrossing = false;
-                    a.rightSl.setCoord(a.rightSl.pos);
-                    defs.values[1] = a.rightSl.getValue();
-                }
-            }
-        },
-
-        rightMoveHandler: function(x) {
-            defs.values[1] = a.rightSl.getValue(x);
-            a.rightSl.setCoord(x);
-
-            if (defs.range === true) {
-                if (f.isRightCrossing(x)) {
-                    isCrossing = true;
-                    a.leftSl.setCoord(x);
-                    defs.values[0] = defs.values[1];
-                    f.setPath(x, 0);
-                } else {
-                    f.setPath(f.getLeft(), x - f.getLeft());
-                    if (isCrossing) {
-                        a.leftSl.setCoord(a.leftSl.pos);
-                        defs.values[0] = a.leftSl.getValue();
-                    }
-                }
-            } else {
-                f.setPath(f.getLeft(), x - f.getLeft());
-            }
-        },
-
-        setRangePath: function(left, width) {
-            a.path[0].style[metricType] = (width / f.getWidth()) * 100 + '%';
-            a.path[0].style[coordType] = (left / f.getWidth()) * 100 + '%';
-        },
-
-        setMaxPath: function(left) {
-            a.path[0].style[metricType] = 100 - (left / f.getWidth()) * 100 + '%';
-        },
-
-        setMinPath: function(left) {
-            a.path[0].style[metricType] = ((left + handleMetric / 2) / f.getWidth()) * 100 + '%';
-        },
-
-        leftVal: function(val) {
-            if (typeof val === 'number') {
-                f.cacheParams();
-                f.leftMoveHandler(a.leftSl.scaleValToCoord(val));
-            } else {
-                return a.leftSl.getValue();
-            }
-        },
-
-        rightVal: function(val) {
-            if (typeof val === 'number') {
-                f.cacheParams();
-                f.rightMoveHandler(a.rightSl.scaleValToCoord(val));
-            } else {
-                return a.rightSl.getValue();
-            }
-        },
-
-        interface: function() {
-            return {
-                on: f.on,
-                getDist: f.getDistance,
-                reset: f.setInitialData,
-                leftVal: f.leftVal,
-                rightVal: f.rightVal
-            };
-        }
-    };
-
-    f.init();
-
-    return f.interface;
+    this.init();
+    return this.interface;
 }
+
+IsliderControl.prototype = {
+    on(eventName, callback) {
+        this.events[eventName] = callback;
+        return this.interface;
+    },
+
+    trigger(eventName, data) {
+        if (this.events[eventName]) {
+            this.events[eventName].apply(null, data);
+        }
+    },
+
+    init() {
+        this.interface = this.getInterface();
+        this.extend();
+        this.generate();
+        this.cacheNodes();
+        this.checkIsVertical();
+        this.setVars();
+        this.setSetPathHandler();
+        this.setSliders();
+        this.isRangeSingle();
+        this.setInitialData();
+        this.bindEvents();
+    },
+
+    bindEvents() {
+        this.element.on('mousedown', this.onElementClick.bind(this));
+        this.leftSlider.on('move', this.onLeftMove.bind(this));
+        this.leftSlider.on('stopSlide', this.onStopSlide.bind(this));
+        this.rightSlider.on('move', this.onRightMove.bind(this));
+        this.rightSlider.on('stopSlide', this.onStopSlide.bind(this));
+        this.slider.on('mousedown', this.onStartSlide.bind(this));
+        this.slider.on('touchstart', this.onStartSlide.bind(this));
+        this.slider.on('mouseenter', this.onHoverElement.bind(this));
+        this.slider.on('mouseleave', this.onUnhoverElement.bind(this));
+    },
+
+    onElementClick(e) {
+        if ($(e.target).hasClass(this.options.slider)) {
+            return;
+        }
+
+        this.freeRide(e);
+    },
+
+    getFreeRideData(e) {
+        let width = this.getWidth();
+        let elementOffset = this.element.offset();
+        let mouseCoord = Utils.getPageCoords(e);
+
+        mouseCoord = this.options.orientation === 'horizontal'
+            ? mouseCoord.left - elementOffset.left
+            : mouseCoord.top - elementOffset.top;
+
+        return {
+            width: width,
+            mouseCoord: mouseCoord
+        };
+    },
+
+    rangeFreeRide(e) {
+        let hasMoved = false;
+        let coord;
+        let distance;
+
+        this.cacheParams();
+
+        let data = this.getFreeRideData(e);
+        let width = data.width;
+        let mouseCoord = data.mouseCoord;
+        let sliderLeft = this.getLeft();
+        let sliderRight = this.getRight();
+
+        if (mouseCoord < sliderLeft) {
+            coord = mouseCoord - this.handleMetric * 0.5;
+            coord = coord < 0 ? 0 : coord;
+            this.onLeftMove(coord);
+            hasMoved = true;
+        } else if (mouseCoord > sliderRight + this.handleMetric) {
+            coord = mouseCoord - this.handleMetric * 1.5;
+            coord = coord > width ? width : coord;
+            this.onRightMove(coord);
+            hasMoved = true;
+        } else {
+            distance = this.getDistance();
+            if (sliderLeft + this.handleMetric < mouseCoord && mouseCoord < sliderLeft + this.handleMetric + distance / 2) {
+                coord = mouseCoord - this.handleMetric * 0.5;
+                if (coord > sliderRight) {
+                    coord = sliderRight;
+                }
+                this.onLeftMove(coord);
+                hasMoved = true;
+            } else {
+                coord = mouseCoord - this.handleMetric * 1.5;
+                if (coord < sliderLeft) {
+                    coord = sliderLeft;
+                }
+                this.onRightMove(coord);
+                hasMoved = true;
+            }
+        }
+
+        if (hasMoved) {
+            this.triggerStopSlide();
+        }
+    },
+
+    minMaxFreeRide(e) {
+        let data = this.getFreeRideData(e);
+        let coord = data.mouseCoord - this.handleMetric * 0.5;
+
+        coord = coord < 0
+            ? 0
+            : coord > data.width
+                ? data.width
+                : coord;
+
+        this.onLeftMove(coord);
+        this.triggerStopSlide();
+    },
+
+    onHoverElement(e) {
+        $(e.target).addClass(this.options.hover);
+    },
+
+    onUnhoverElement(e) {
+        $(e.target).removeClass(this.options.hover);
+    },
+
+    onStopSlide() {
+        this.element.addClass(this.options.hasAnim);
+        this.activeSlider.element.removeClass(this.options.active);
+        this.triggerStopSlide();
+    },
+
+    onStartSlide(e) {
+        if (e.target === this.leftSlider.element[0]) {
+            this.activeSlider = this.leftSlider;
+        } else if (e.target === this.rightSlider.element[0]) {
+            this.activeSlider = this.rightSlider;
+        }
+
+        this.activeSlider.startSlide(e);
+        this.element.removeClass(this.options.hasAnim);
+        this.activeSlider.element.addClass(this.options.active);
+        this.cacheParams();
+
+        return false;
+    },
+
+    triggerStopSlide() {
+        this.element.trigger('islider.stop-slide');
+    },
+
+    extend() {
+        $.extend(true, this.options, Defaults, this.properties);
+    },
+
+    cacheParams() {
+        this.leftSlider.position = this.getLeft(true);
+        this.rightSlider.position = this.getRight(true);
+        this.elementWidth = this.getWidth(true);
+    },
+
+    cacheNodes() {
+        this.element.addClass(this.options.islider);
+        this.slider = this.element.find('.' + this.options.slider);
+        this.leftElement = this.element.find('.' + this.options.left);
+        this.rightElement = this.element.find('.' + this.options.right);
+        this.path = this.element.find('.' + this.options.path);
+        this.box = this.element.find('.' + this.options.box);
+
+        setTimeout(function() {
+            this.element.addClass(this.options.hasAnim);
+        }.bind(this), 10);
+    },
+
+    setVars() {
+        this.isVertical = this.options.orientation === 'vertical';
+        this.metricType = this.isVertical ? 'height' : 'width';
+        this.coordType = this.isVertical ? 'top' : 'left';
+        this.handleMetric = this.leftElement[this.metricType]() || this.rightElement[this.metricType]();
+        this.elementWidth = this.getWidth(true);
+
+        if (this.isVertical) {
+            this.box.height(this.elementWidth);
+        }
+    },
+
+    setSetPathHandler() {
+        this.setPath = this.options.range === true
+            ? this.setRangePath
+            : this.options.range === 'min'
+                ? this.setMinPath
+                : this.setMaxPath;
+    },
+
+    getWidth(readEl) {
+        if (!readEl) {
+            return this.elementWidth;
+        }
+
+        let param = this.isVertical
+            ? this.element[0].offsetHeight
+            : this.element[0].offsetWidth;
+
+        return param - this.handleMetric * (this.options.range === true ? 2 : 1);
+    },
+
+    checkIsVertical() {
+        if (this.options.orientation === 'vertical') {
+            this.element.addClass('islider_vertical');
+        } else {
+            this.element.addClass('islider_horizontal');
+        }
+    },
+
+    isRangeSingle() {
+        if (this.options.range === 'min') {
+            this.options.values[1] = this.options.value;
+            this.element.addClass('islider_min');
+            this.freeRide = this.minMaxFreeRide;
+        } else if (this.options.range === 'max') {
+            this.element.addClass('islider_max');
+            let hook = this.options.orientation === 'horizontal' ? 'right' : 'bottom';
+            this.path[0].style[hook] = 0;
+            this.options.values[0] = this.options.value;
+            this.options.values[1] = this.options.domain[1];
+            this.freeRide = this.minMaxFreeRide;
+        } else {
+            this.element.addClass('islider_range');
+            this.freeRide = this.rangeFreeRide;
+        }
+    },
+
+    generate() {
+        if (!this.options.generate) {
+            return;
+        }
+
+        let box = $('<div>').addClass(this.options.box).appendTo(this.element);
+        $('<div>').addClass(this.options.left).addClass(this.options.slider).appendTo(box);
+        $('<div>').addClass(this.options.right).addClass(this.options.slider).appendTo(box);
+        $('<div>').addClass(this.options.path).appendTo(box);
+    },
+
+    setSliders() {
+        let props = {
+            orientation: this.options.orientation,
+            domain: this.options.domain,
+            step: this.options.step,
+            getWidth: this.getWidth.bind(this)
+        };
+
+        this.leftSlider = new IsliderDrag(this.leftElement, props);
+        this.rightSlider = new IsliderDrag(this.rightElement, props);
+    },
+
+    setInitialData() {
+        if (this.options.range === true) {
+            this.leftSlider.setValue(this.options.values[0]);
+            this.rightSlider.setValue(this.options.values[1]);
+        } else {
+            this.leftSlider.setValue(this.options.value);
+        }
+
+        this.cacheParams();
+        this.setPath(this.getLeft(), this.getDistance());
+
+        if (this.options.range !== true) {
+            this.rightElement.hide();
+        }
+    },
+
+    getLeft(readElement) {
+        if (readElement) {
+            return this.leftSlider.getCoord();
+        } else {
+            return this.leftSlider.position;
+        }
+    },
+
+    getRight(readElement) {
+        if (readElement) {
+            return this.rightSlider.getCoord();
+        } else {
+            return this.rightSlider.position;
+        }
+    },
+
+    getDistance() {
+        return this.getRight() - this.getLeft();
+    },
+
+    isLeftCrossing(x) {
+        return x >= this.getRight();
+    },
+
+    isRightCrossing(x) {
+        return x <= this.getLeft();
+    },
+
+    onLeftMove(x) {
+        this.leftMoveHandler(x);
+        this.options.onSlide(this.options.values[0], this.options.values, 'left');
+    },
+
+    onRightMove(x) {
+        this.rightMoveHandler(x);
+        this.options.onSlide(this.options.values[1], this.options.values, 'right');
+    },
+
+    leftMoveHandler(x) {
+        let pathWidth = this.getRight() - x;
+        this.options.values[0] = this.leftSlider.getValue(x);
+        this.leftSlider.setCoord(x);
+        this.setPath(x, pathWidth < 0 ? 0 : pathWidth);
+
+        if (this.options.range === true) {
+            if (this.isLeftCrossing(x)) {
+                this.isCrossing = true;
+                this.rightSlider.setCoord(x);
+                this.options.values[1] = this.options.values[0];
+            } else if (this.isCrossing) {
+                this.isCrossing = false;
+                this.rightSlider.setCoord(this.rightSlider.position);
+                this.options.values[1] = this.rightSlider.getValue();
+            }
+        }
+    },
+
+    rightMoveHandler(x) {
+        this.options.values[1] = this.rightSlider.getValue(x);
+        this.rightSlider.setCoord(x);
+
+        if (this.options.range === true) {
+            if (this.isRightCrossing(x)) {
+                this.isCrossing = true;
+                this.leftSlider.setCoord(x);
+                this.options.values[0] = this.options.values[1];
+                this.setPath(x, 0);
+            } else {
+                this.setPath(this.getLeft(), x - this.getLeft());
+                if (this.isCrossing) {
+                    this.leftSlider.setCoord(this.leftSlider.position);
+                    this.options.values[0] = this.leftSlider.getValue();
+                }
+            }
+        } else {
+            this.setPath(this.getLeft(), x - this.getLeft());
+        }
+    },
+
+    setRangePath(left, width) {
+        this.path[0].style[this.metricType] = (width / this.getWidth()) * 100 + '%';
+        this.path[0].style[this.coordType] = (left / this.getWidth()) * 100 + '%';
+    },
+
+    setMaxPath(left) {
+        this.path[0].style[this.metricType] = 100 - (left / this.getWidth()) * 100 + '%';
+    },
+
+    setMinPath(left) {
+        this.path[0].style[this.metricType] = ((left + this.handleMetric / 2) / this.getWidth()) * 100 + '%';
+    },
+
+    leftVal(val) {
+        if (typeof val === 'number') {
+            this.cacheParams();
+            this.leftMoveHandler(this.leftSlider.scaleValToCoord(val));
+        } else {
+            return this.leftSlider.getValue();
+        }
+    },
+
+    rightVal(val) {
+        if (typeof val === 'number') {
+            this.cacheParams();
+            this.rightMoveHandler(this.rightSlider.scaleValToCoord(val));
+        } else {
+            return this.rightSlider.getValue();
+        }
+    },
+
+    getInterface() {
+        return {
+            on: this.on.bind(this),
+            getDist: this.getDistance.bind(this),
+            reset: this.setInitialData.bind(this),
+            leftVal: this.leftVal.bind(this),
+            rightVal: this.rightVal.bind(this)
+        };
+    }
+};

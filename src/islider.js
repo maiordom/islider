@@ -1,10 +1,12 @@
+/* eslint no-unused-vars: 0 */
+/* global IsliderControl */
 (function($, root, undefined) { // eslint-disable-line
     'use strict';
 
-    var Utils = {
-        getPageCoords: function(e) {
+    const Utils = {
+        getPageCoords(e) {
             if (e.originalEvent.changedTouches || e.originalEventtargetTouches) {
-                var page = (e.originalEvent.changedTouches[0] || e.originalEventtargetTouches[0]);
+                let page = (e.originalEvent.changedTouches[0] || e.originalEventtargetTouches[0]);
                 return {
                     left: page.pageX,
                     top: page.pageY
@@ -18,17 +20,19 @@
         }
     };
 
-    var Defaults = {
-        islider: 'islider',
-        left: 'islider__left',
-        right: 'islider__right',
-        slider: 'islider__slider',
-        path: 'islider__path',
-        box: 'islider__box',
-        hover: 'islider_hover',
-        active: 'islider_active',
-        focus: 'islider_focus',
-        hasAnim: 'islider_has_anim',
+    const ns = 'islider';
+
+    const Defaults = {
+        islider: `${ns}`,
+        left: `${ns}__left`,
+        right: `${ns}__right`,
+        slider: `${ns}__slider`,
+        path: `${ns}__path`,
+        box: `${ns}__box`,
+        hover: `${ns}_hover`,
+        active: `${ns}_active`,
+        focus: `${ns}_focus`,
+        hasAnim: `${ns}_has_anim`,
         orientation: 'horizontal',
         range: 'min',
         step: 1,
@@ -43,13 +47,15 @@
     // @@drag
 
     $.fn.islider = function(props) {
-        var item, instance;
+        let item;
+        let instance;
+
         $(this).each(function() {
             item = $(this);
             if (item.data('islider')) {
                 console.log('islider already init', this);
             } else {
-                instance = iSlider(item, props ? props : {});
+                instance = new IsliderControl(item, props);
                 item.data('islider', instance);
             }
         });
@@ -57,4 +63,4 @@
         return this;
     };
 
-})(jQuery, window, undefined);
+})(jQuery, window, undefined); // eslint-disable-line
